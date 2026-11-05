@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, banner, hintPill, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const DURATION = 85; // seconds until dusk is gone
@@ -54,17 +54,25 @@ export default class Night1 extends Phaser.Scene {
     this.k = new Keeper(this, this.light, {
       x: 640, y: 620, top: WALK.top, bottom: WALK.bottom, left: walkLeft, right: walkRight, scale: [0.26, 0.36], speed: SPEED, wicks: 1,
     });
+    this.started = false;
     this.k.onFirstMove = () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 800, delay: 2500 });
 
     this.ringGfx = this.add.graphics().setDepth(820);
 
     this.buildHud();
-    banner(this, { kicker: 'DAY 1  ·  NIGHT 1', title: NIGHTS[1].name, sub: NIGHTS[1].goal }, { hold: 2600 });
-    this.hint = hintPill(this, 'Drag, arrow keys or WASD to move  ·  stand beside a plate to light it', H - 44);
-    this.time.delayedCall(11000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    // how to play: the night begins only once the player says "Got it"
+    this.k.enabled = false;
+    instructions(this, { kicker: 'DAY 1  ·  NIGHT 1', title: NIGHTS[1].name, sub: NIGHTS[1].goal }, () => this.startLevel());
+  }
 
-    this.time.delayedCall(1800, () => this.spawnPlate());
-    this.time.delayedCall(3600, () => this.spawnPlate());
+  // the dusk timer and the plates only start now
+  startLevel() {
+    this.started = true;
+    this.k.enabled = true;
+    this.hint = hintPill(this, 'Drag, arrow keys or WASD to move  ·  stand beside a plate to light it', H - 44);
+    this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    this.time.delayedCall(1200, () => this.spawnPlate());
+    this.time.delayedCall(3000, () => this.spawnPlate());
   }
 
   // ---------------------------------------------------------------- HUD
@@ -265,7 +273,7 @@ export default class Night1 extends Phaser.Scene {
   // ---------------------------------------------------------------- loop
   update(time, delta) {
     const dt = Math.min(delta / 1000, 0.05);
-    if (!this.over) this.t += dt;
+    if (this.started && !this.over) this.t += dt;
     this.k.update(time, dt);
     this.updatePlates(dt, time);
     this.updateCrows(time);

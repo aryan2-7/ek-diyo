@@ -12,6 +12,10 @@ let drone = null;
 const PENTA = [587.33, 659.25, 783.99, 880.0, 987.77, 1174.66]; // D E G A B D
 const SEVEN = [392.0, 440.0, 493.88, 587.33, 659.25, 783.99, 880.0]; // one note per tika colour
 
+// How long to wait after the first tap/key (or after load, when audio is already unlocked)
+// before the ambience begins: the starting screen gets a beat of quiet first.
+const AMBIENT_DELAY = 1500;
+
 const running = () => !!ctx && ctx.state === 'running' && !muted;
 
 function tone({ f = 440, to = null, dur = 0.2, type = 'sine', vol = 0.15, delay = 0, attack = 0.004 } = {}) {
@@ -70,11 +74,11 @@ export const Sfx = {
       // and start the ambient bells + drone then, so sound is simply on without finding a button.
       const first = () => {
         ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, first, true));
-        const go = () => Sfx.startAmbient();
-        ctx.state === 'running' ? go() : ctx.resume().then(go, go);
+        const begin = () => setTimeout(() => Sfx.startAmbient(), AMBIENT_DELAY);
+        ctx.state === 'running' ? begin() : ctx.resume().then(begin, begin);
       };
       ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, first, true));
-      if (ctx.state === 'running') this.startAmbient(); // already unlocked (e.g. returning from another page)
+      if (ctx.state === 'running') setTimeout(() => this.startAmbient(), AMBIENT_DELAY); // already unlocked (e.g. returning from another page)
     }
   },
   unlock() {

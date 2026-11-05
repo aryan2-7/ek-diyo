@@ -6,7 +6,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, banner, hintPill, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
 
 const lerp = Phaser.Math.Linear;
 
@@ -50,6 +50,7 @@ export default class Night3 extends Phaser.Scene {
     this.carry = false;
     this.garlandsGiven = 0;
     this.blessing = 0;
+    this.started = false;
     this.nextGust = 18;
     this.nextGarland = 7;
     this.winAmbient = 0;
@@ -104,9 +105,16 @@ export default class Night3 extends Phaser.Scene {
       .setDepth(830);
 
     this.buildHud();
-    banner(this, { kicker: 'DAY 3  ·  NIGHT 3', title: NIGHTS[3].name, sub: NIGHTS[3].goal }, { hold: 3000 });
+    // how to play: the night begins only once the player says "Got it" (the lamps wait too)
+    this.k.enabled = false;
+    instructions(this, { kicker: 'DAY 3  ·  NIGHT 3', title: NIGHTS[3].name, sub: NIGHTS[3].goal }, () => this.startLevel());
+  }
+
+  startLevel() {
+    this.started = true;
+    this.k.enabled = true;
     this.hint = hintPill(this, 'Stand beside a lamp to refill its oil  ·  keep the lanes lit', H - 44);
-    this.time.delayedCall(12000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    this.time.delayedCall(10000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
   }
 
   // ---------------------------------------------------------------- HUD
@@ -146,7 +154,8 @@ export default class Night3 extends Phaser.Scene {
   // ---------------------------------------------------------------- lamps
   updateLamps(dt, time) {
     const k = this.k;
-    const rate = lerp(1 / 21, 1 / 12, Math.min(1, this.t / DURATION)) * (this.blessing > 0 ? 0.35 : 1);
+    // oil only burns down once the night has started
+    const rate = !this.started || this.over ? 0 : lerp(1 / 21, 1 / 12, Math.min(1, this.t / DURATION)) * (this.blessing > 0 ? 0.35 : 1);
     this.bars.clear();
     for (const l of this.lamps) {
       const dx = k.x - l.x;
@@ -309,7 +318,7 @@ export default class Night3 extends Phaser.Scene {
   // ---------------------------------------------------------------- loop
   update(time, delta) {
     const dt = Math.min(delta / 1000, 0.05);
-    if (!this.over) this.t += dt;
+    if (this.started && !this.over) this.t += dt;
     this.blessing = Math.max(0, this.blessing - dt);
     this.k.update(time, dt);
     this.updateCow(dt, time);

@@ -10,7 +10,6 @@ export const PROLOGUE = {
   body:
     'For five days every autumn, Nepal says thank you: to the crow, the dog, the cow, to ourselves, and to our brothers and sisters.\n\n' +
     'Light a diya, and the dark steps back. Each night one more wick joins the flame. Carry it through all five.',
-  fact: 'Tihar is also called Yamapanchak and Deepawali.',
   next: 'Night1',
   wicksBefore: 0,
 };

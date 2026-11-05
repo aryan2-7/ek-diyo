@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, banner, hintPill, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const ROUNDS = [1, 2, 3, 3, 4, 4, 5]; // colours Yamuna shows in each of the seven rounds
@@ -109,10 +109,14 @@ export default class Night5 extends Phaser.Scene {
       .setDepth(830);
 
     this.buildHud();
-    banner(this, { kicker: 'DAY 5  ·  NIGHT 5', title: NIGHTS[5].name, sub: NIGHTS[5].goal }, { hold: 3000 });
+    // how to play: the first round starts only once the player says "Got it"
+    instructions(this, { kicker: 'DAY 5  ·  NIGHT 5', title: NIGHTS[5].name, sub: NIGHTS[5].goal }, () => this.startLevel());
+  }
+
+  startLevel() {
     this.hint = hintPill(this, 'Watch Yamuna point, then tap the same colours in the same order', H - 34);
-    this.time.delayedCall(12000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
-    this.time.delayedCall(3600, () => this.newRound());
+    this.time.delayedCall(10000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    this.time.delayedCall(700, () => this.newRound());
   }
 
   buildHud() {

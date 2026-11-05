@@ -94,8 +94,8 @@ export function coverBg(scene, key, depth = 0) {
   return img;
 }
 
-/** Big paper banner announcing a night. */
-export function banner(scene, { kicker, title, sub }, { hold = 2600 } = {}) {
+/** Big paper banner announcing a night. Returns the container (use keep: true to fade it out yourself). */
+export function banner(scene, { kicker, title, sub }, { hold = 2600, keep = false } = {}) {
   const w = 780;
   const h = 170;
   const c = scene.add.container(W / 2, 250).setDepth(950).setAlpha(0);
@@ -111,8 +111,33 @@ export function banner(scene, { kicker, title, sub }, { hold = 2600 } = {}) {
   ]);
   c.setScale(0.92);
   scene.tweens.add({ targets: c, alpha: 1, scale: 1, duration: 550, ease: 'Back.easeOut' });
-  scene.tweens.add({ targets: c, alpha: 0, y: 225, delay: hold, duration: 700, onComplete: () => c.destroy() });
+  if (!keep) scene.tweens.add({ targets: c, alpha: 0, y: 225, delay: hold, duration: 700, onComplete: () => c.destroy() });
   return c;
+}
+
+/**
+ * How-to-play panel: the night banner plus a "Got it" button, so the level only starts
+ * when the player says so. onGo fires just after the panel fades away.
+ */
+export function instructions(scene, info, onGo, { delay = 450 } = {}) {
+  const panel = banner(scene, info, { keep: true });
+  let btn = null;
+  let done = false;
+  const dismiss = () => {
+    if (done) return;
+    done = true;
+    KEYS.forEach((k) => scene.input.keyboard.off(k, dismiss));
+    btn?.destroy();
+    scene.tweens.add({ targets: panel, alpha: 0, y: 225, duration: 500, onComplete: () => panel.destroy() });
+    scene.time.delayedCall(360, onGo);
+  };
+  const KEYS = ['keydown-SPACE', 'keydown-ENTER'];
+  KEYS.forEach((k) => scene.input.keyboard.on(k, dismiss));
+  scene.time.delayedCall(delay, () => {
+    btn = button(scene, W / 2, 396, 'Got it', dismiss, { w: 200, h: 54, size: 26, depth: 951 });
+    btn.setAlpha(0);
+    scene.tweens.add({ targets: btn, alpha: 1, duration: 300 });
+  });
 }
 
 /** A small paper pill with a hint. Returns the container so callers can fade it. */

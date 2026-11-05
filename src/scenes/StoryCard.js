@@ -46,12 +46,14 @@ export default class StoryCard extends Phaser.Scene {
     art.setScale(Math.min(150 / art.height, 210 / art.width));
     const title = titleText(this, 0, -128, card.title, { size: 31, color: CSS.indigo, shadow: false, depth: 0, wrap: 380 });
     const body = text(this, 0, -86, card.body, { size: 21, color: CSS.soot, shadow: false, depth: 0, wrap: 372, spacing: 2, origin: [0.5, 0] });
-    const fact = text(this, 0, 262, card.fact, { size: 18, color: CSS.vermilion, shadow: false, depth: 0, bold: true });
     // long titles shrink to one line
     for (let size = 31; size > 22 && title.height > 44; size--) title.setFontSize(size + 'px');
     // long stories shrink a little so they always fit the card
     for (let size = 21; size > 15 && body.height > 340; size--) body.setFontSize(size + 'px');
-    c.add([frame, art, title, body, fact]);
+    // some cards have a festival-fact line at the bottom, others don't
+    const parts = [frame, art, title, body];
+    if (card.fact) parts.push(text(this, 0, 262, card.fact, { size: 18, color: CSS.vermilion, shadow: false, depth: 0, bold: true }));
+    c.add(parts);
     c.setPosition(W / 2 + 40, -420).setAngle(-9);
     this.tweens.add({
       targets: c, y: H / 2 + 4, angle: -1.2, duration: 900, delay: 500, ease: 'Back.easeOut',

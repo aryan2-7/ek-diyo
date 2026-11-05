@@ -5,25 +5,27 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, banner, hintPill, tornPaper, go, fadeIn, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const GROUND = 655; // y of the street the dog runs on
 const DOG_X = 330;
 const GRAVITY = 2400;
-const JUMP_V = -1200; // a big, floaty leap: about 300 px high when you hold the button
-const BASE_SPEED = 400;
-const MAX_SPEED = 520;
+const JUMP_V = -1200; // the original big, floaty leap: about 300 px high when you hold the button
+const SPEED = 430; // one steady pace: the challenge is reading the road, not outgrowing it
 const TRACK = 36000; // distance (px) from start to the gate  (~80 s)
 const NO_SPAWN_LAST = 2600; // stop spawning obstacles this far before the gate
+const DIYA_FLOAT = { x: W - 150, y: 140 }; // the diya escorts from up top, out of the road's way
 // ---------------------------------------------------------------------------
 
 const lerp = Phaser.Math.Linear;
 const approach = (v, to, step) => (v < to ? Math.min(to, v + step) : Math.max(to, v - step));
 
+// Hitboxes are deliberately much smaller than the sprites: the verdict should feel
+// obviously fair (the pictures almost never die on a jump that *looks* like it cleared).
 const OBSTACLES = {
-  pots: { key: 'obstacle_pots', h: 135, hitW: 46, hitH: 118 },
-  baskets: { key: 'obstacle_baskets', h: 105, hitW: 80, hitH: 74 },
+  pots: { key: 'obstacle_pots', h: 135, hitW: 30, hitH: 92 },
+  baskets: { key: 'obstacle_baskets', h: 105, hitW: 56, hitH: 52 },
 };
 
 export default class Night2 extends Phaser.Scene {
@@ -51,7 +53,7 @@ export default class Night2 extends Phaser.Scene {
     this.onGround = true;
     this.jumpBuffer = 0;
     this.gallop = 0;
-    this.ambBase = 0.12;
+    this.ambBase = 0.2; // keep the scene clearly visible: only a slight night tint (no lamp lights here)
     this.t = 0;
   }
 
@@ -74,20 +76,22 @@ export default class Night2 extends Phaser.Scene {
     this.keeper = this.add.image(250, GROUND + 14, 'keeper_side').setOrigin(0.5, 1).setDepth(GROUND + 20);
     this.keeper.setScale(285 / this.keeper.height);
 
-    // the diya: starts in his hand, then floats ahead to light the road
-    this.rig = new DiyaRig(this, 0, 0, { width: 88, wicks: 2, depth: 760 });
+    // the diya escorts from up top; the street is bright enough on its own (no lamp light here)
+    this.rig = new DiyaRig(this, 0, 0, { width: 96, wicks: 2, depth: 760, texture: 'five_diya' });
     this.handPos = {
       x: this.keeper.x + (0.97 - 0.5) * this.keeper.displayWidth,
       y: this.keeper.y - this.keeper.displayHeight * 0.5,
     };
     this.rig.setPosition(this.handPos.x, this.handPos.y);
-    this.diyaLight = this.light.add({ x: this.handPos.x, y: this.handPos.y, radius: 300, flicker: 0.05 });
 
     // dog
     this.shadow = this.add.ellipse(DOG_X, GROUND + 4, 170, 18, COLORS.soot, 0.35).setDepth(GROUND - 1);
     this.dog = this.add.image(DOG_X, GROUND, 'dog_run').setOrigin(0.5, 1).setDepth(GROUND + 10);
     this.dogScale = 218 / this.dog.width;
     this.dog.setScale(this.dogScale);
+    // a fair hitbox derived from the art: body only of the running pose (no tail, no ear tips)
+    this.dogW = this.dog.displayWidth * 0.55;
+    this.dogH = this.dog.displayHeight * 0.72;
 
     this.dust = this.add.particles(0, 0, 'ember', {
       lifespan: 450, speedX: { min: -90, max: 20 }, speedY: { min: -60, max: -10 },
@@ -109,19 +113,22 @@ export default class Night2 extends Phaser.Scene {
     this.input.on('pointerup', release);
 
     this.buildHud();
-    banner(this, { kicker: 'DAY 2  ·  NIGHT 2', title: NIGHTS[2].name, sub: NIGHTS[2].goal }, { hold: 2400 });
-    this.hint = hintPill(this, 'Space, W or tap to jump  ·  hold for a higher leap', H - 44);
+    // how to play: the run starts only once the player says "Got it"
+    instructions(this, { kicker: 'DAY 2  ·  NIGHT 2', title: NIGHTS[2].name, sub: NIGHTS[2].goal }, () => this.startIntro());
+  }
 
-    // intro beat: the diya rises from the Keeper's hand and floats ahead
-    this.time.delayedCall(1900, () => {
+  // intro beat: the diya rises from the Keeper's hand and floats ahead, then the dog is off
+  startIntro() {
+    this.hint = hintPill(this, 'Space, W or tap to jump  ·  hold for a higher leap', H - 44);
+    this.time.delayedCall(400, () => {
       Sfx.bark();
       Sfx.chime();
       const tw = { u: 0 };
       this.tweens.add({
         targets: tw, u: 1, duration: 1300, ease: 'Cubic.easeInOut',
         onUpdate: () => {
-          const x = lerp(this.handPos.x, DOG_X + 175, tw.u);
-          const y = lerp(this.handPos.y, 390, tw.u) - Math.sin(tw.u * Math.PI) * 90;
+          const x = lerp(this.handPos.x, DIYA_FLOAT.x, tw.u);
+          const y = lerp(this.handPos.y, DIYA_FLOAT.y, tw.u) - Math.sin(tw.u * Math.PI) * 110;
           this.rig.setPosition(x, y);
         },
         onComplete: () => {
@@ -130,8 +137,7 @@ export default class Night2 extends Phaser.Scene {
           this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
         },
       });
-      this.tweens.add({ targets: this.diyaLight, radius: 520, duration: 1300 });
-      this.tweens.addCounter({ from: 0.12, to: 0.62, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
+      this.tweens.addCounter({ from: 0.2, to: 0.35, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
     });
   }
 
@@ -171,17 +177,17 @@ export default class Night2 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- spawning
   // Each pattern is a few obstacles at x offsets (px) plus how far to wait before the next one.
-  // Offsets are tuned to the bigger jump (~330-470 px of air at run speed): close pairs are one long
-  // leap, wide pairs need two jumps, and "rest" is just a trail of garlands to catch.
+  // Tuned to the original big leap (~430 px of air at the steady pace): every double is a
+  // side-by-side pair that one leap clears with room to spare, and the triple is three separate hops.
   spawnPattern() {
     const x0 = W + 150;
     const PATTERNS = [
       { w: 3, obs: [['pots', 0]], gap: [850, 1350] },
       { w: 3, obs: [['baskets', 0]], gap: [800, 1250] },
-      { w: 2, obs: [['pots', 0], ['baskets', 330]], gap: [950, 1450] }, // one long leap clears both
-      { w: 2, obs: [['baskets', 0], ['pots', 300]], gap: [950, 1450] },
-      { w: 2, obs: [['pots', 0], ['pots', 640]], gap: [900, 1400] }, // two separate jumps
-      { w: 1, obs: [['baskets', 0], ['pots', 520], ['baskets', 1080]], gap: [1000, 1500] }, // a rhythm of three
+      { w: 2, obs: [['pots', 0], ['baskets', 130]], gap: [950, 1450] }, // side by side: one long leap clears both
+      { w: 2, obs: [['baskets', 0], ['pots', 125]], gap: [950, 1450] },
+      { w: 2, obs: [['pots', 0], ['pots', 135]], gap: [900, 1400] },
+      { w: 1, obs: [['baskets', 0], ['pots', 560], ['baskets', 1120]], gap: [1000, 1500] }, // a rhythm of three
       { w: 1, obs: [], rest: true, gap: [500, 800] }, // breather: garland trail only
     ];
     const total = PATTERNS.reduce((n, p) => n + p.w, 0);
@@ -197,7 +203,7 @@ export default class Night2 extends Phaser.Scene {
       spr.setScale(def.h / spr.height);
       this.obs.push({ spr, def, x: px });
     };
-    // a three-garland arc that peaks near the top of the jump
+    // a three-garland arc that peaks near the top of the jump (the apex is ~300 px)
     const arc = (cx, spread = 140) => {
       [-spread, 0, spread].forEach((dx, i) => this.addGarland(cx + dx, GROUND - (i === 1 ? 300 : 215)));
     };
@@ -209,7 +215,7 @@ export default class Night2 extends Phaser.Scene {
       chosen.obs.forEach(([type, dx]) => place(type, x0 + dx));
       // one arc over each obstacle, or one wide arc across a close pair
       const xs = chosen.obs.map(([, dx]) => dx);
-      if (xs.length === 2 && xs[1] - xs[0] < 400) arc(x0 + (xs[0] + xs[1]) / 2, 190);
+      if (xs.length === 2 && xs[1] - xs[0] < 400) arc(x0 + (xs[0] + xs[1]) / 2, 150);
       else xs.forEach((dx) => arc(x0 + dx));
       // sometimes a low garland in the gap after the last obstacle
       if (Math.random() < 0.5) this.addGarland(x0 + xs[xs.length - 1] + 300, GROUND - 98);
@@ -219,9 +225,12 @@ export default class Night2 extends Phaser.Scene {
   }
 
   addGarland(x, y) {
+    // glow + shadow so the garland reads against the marigold-heavy street
+    const shadow = this.add.ellipse(x, y + 6, 120, 42, COLORS.soot, 0.45).setDepth(GROUND + 7);
+    const glow = this.add.image(x, y - 16, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(1.5).setAlpha(0.95).setDepth(GROUND + 7);
     const spr = this.add.image(x, y, 'marigold_mala').setDepth(GROUND + 8);
-    spr.setScale(124 / spr.width);
-    this.gar.push({ spr, x, y, taken: false, bob: Math.random() * 6 });
+    spr.setScale(142 / spr.width);
+    this.gar.push({ spr, glow, shadow, x, y, taken: false, bob: Math.random() * 6 });
     this.garlandsSeen++;
   }
 
@@ -230,9 +239,9 @@ export default class Night2 extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
     this.t += dt;
 
-    // speed control
+    // speed control: one steady pace, only slowing when the dog stumbles or nears the gate
     if (this.phase === 'run' || this.phase === 'gate') {
-      let target = lerp(BASE_SPEED, MAX_SPEED, Math.min(1, this.dist / TRACK));
+      let target = SPEED;
       if (this.stumble > 0) target *= 0.5;
       if (this.gate) {
         const left = this.gate.x - (DOG_X + 240);
@@ -295,8 +304,12 @@ export default class Night2 extends Phaser.Scene {
       g.x -= move;
       g.spr.setPosition(g.x, g.y + Math.sin(this.t * 3 + g.bob) * 4);
       g.spr.setRotation(Math.sin(this.t * 2 + g.bob) * 0.05);
+      g.glow.setPosition(g.x, g.y - 16).setAlpha(0.85 + 0.18 * Math.sin(this.t * 4 + g.bob));
+      g.shadow.setPosition(g.x, g.y + 6);
       if (g.x < -200) {
         g.spr.destroy();
+        g.glow.destroy();
+        g.shadow.destroy();
         this.gar.splice(i, 1);
       }
     }
@@ -340,11 +353,12 @@ export default class Night2 extends Phaser.Scene {
 
     if (!run) return;
 
-    // collisions
-    const dl = DOG_X - 40;
-    const dr = DOG_X + 50;
-    const dt_ = this.dogY - 102;
-    const db = this.dogY - 8;
+    // collisions: the dog's box is derived from its sprite (cached, so the landing-squash
+    // tween can't wobble it), and like the obstacle boxes it sits inside the picture
+    const dl = DOG_X - this.dogW / 2;
+    const dr = DOG_X + this.dogW / 2;
+    const db = this.dogY - 6;
+    const dt_ = db - this.dogH;
     if (this.invuln <= 0) {
       for (let i = 0; i < this.obs.length; i++) {
         const o = this.obs[i];
@@ -365,13 +379,16 @@ export default class Night2 extends Phaser.Scene {
         this.garlands++;
         Sfx.collect();
         this.tweens.add({
-          targets: g.spr, x: 62, y: 46, scale: 0.05, alpha: 0.2, duration: 450, ease: 'Cubic.easeIn',
+          targets: [g.spr, g.glow], x: 62, y: 46, scale: 0.05, alpha: 0.2, duration: 450, ease: 'Cubic.easeIn',
           onComplete: () => {
             const i = this.gar.indexOf(g);
             if (i >= 0) this.gar.splice(i, 1);
             g.spr.destroy();
+            g.glow.destroy();
+            g.shadow.destroy();
           },
         });
+        g.shadow.destroy();
         this.petals.explode(5, g.x, g.y);
       }
     }
@@ -379,8 +396,8 @@ export default class Night2 extends Phaser.Scene {
 
   hit(o, i) {
     this.stumbles++;
-    this.stumble = 0.9;
-    this.invuln = 1.5;
+    this.stumble = 0.7; // a shorter, gentler stumble
+    this.invuln = 1.9; // and a longer grace period after it
     Sfx.hit();
     Sfx.yelp();
     this.cameras.main.shake(140, 0.005);
@@ -394,13 +411,10 @@ export default class Night2 extends Phaser.Scene {
   updateDiya(time) {
     if (this.floating) {
       const bobY = Math.sin(this.t * 2.2) * 9;
-      const x = DOG_X + 175 + Math.sin(this.t * 1.3) * 6;
-      this.rig.setPosition(x, 390 + bobY);
+      const x = DIYA_FLOAT.x + Math.sin(this.t * 1.3) * 6;
+      this.rig.setPosition(x, DIYA_FLOAT.y + bobY);
     }
     this.rig.update(time);
-    const lp = this.rig.lightPoint();
-    this.diyaLight.x = lp.x;
-    this.diyaLight.y = lp.y;
   }
 
   // ---------------------------------------------------------------- the gate

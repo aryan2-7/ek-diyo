@@ -57,6 +57,9 @@ export default class Title extends Phaser.Scene {
       go(this, 'StoryCard', { night: 0, card: PROLOGUE, stats: [], next: 'Night1', wicksBefore: 0 });
     }, { w: 300, h: 68, size: 34 });
 
+    // sound is on by default, but let the title settle for a beat before the ambience begins
+    this.time.delayedCall(2400, () => Sfx.startAmbient());
+
     // night select
     text(this, 190, 586, 'Nights', { size: 22, color: CSS.cream, depth: 30 }).setAlpha(0.85);
     for (let n = 1; n <= 5; n++) {

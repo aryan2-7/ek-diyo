@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, banner, hintPill, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
 
 // ---- the mandala, as five lines drawn one after another --------------------
 const CX = 640; // centre of the disc on screen
@@ -13,7 +13,7 @@ const CY = 388;
 const R = 262; // disc radius
 const SPACING = 11; // distance between guide dots
 const HIT = 30; // how close the light must pass to light a dot
-const NEED = 0.93; // share of dots needed to finish a line
+const NEED = 0.95; // a line completes when at most 5% of its dots are still unlit
 const FLAME_DROP = 22; // the flame's base sits this far below the pointer, so its body is centred on the pointer
 
 const LINE_COLORS = [COLORS.marigold, COLORS.vermilion, COLORS.turmeric, COLORS.magenta, 0xfff3cf];
@@ -162,17 +162,19 @@ export default class Night4 extends Phaser.Scene {
     this.say = text(this, W / 2, 96, '', { size: 28, color: CSS.cream, depth: 906 });
     this.buildHud();
 
-    banner(this, { kicker: 'DAY 4  ·  NIGHT 4', title: NIGHTS[4].name, sub: NIGHTS[4].goal }, { hold: 2800 });
-    // zoom in on the ground: the oval opens into a full circle
-    this.time.delayedCall(2000, () => {
-      this.tweens.add({ targets: this.shade, fillAlpha: 0.55, duration: 1200 });
-      this.tweens.add({ targets: this.disc, scaleY: 1, alpha: 1, duration: 1500, ease: 'Cubic.easeInOut' });
-      this.tweens.add({ targets: this.discLight, radius: 380, duration: 1500 });
-      this.tweens.add({ targets: this, ambient: 0.62, duration: 1500 });
-      this.time.delayedCall(1500, () => this.beginLine(0));
-    });
+    // how to play: the mandala opens only once the player says "Got it"
+    instructions(this, { kicker: 'DAY 4  ·  NIGHT 4', title: NIGHTS[4].name, sub: NIGHTS[4].goal }, () => this.startIntro());
+  }
+
+  // zoom in on the ground: the oval opens into a full circle, then the first line waits
+  startIntro() {
+    this.tweens.add({ targets: this.shade, fillAlpha: 0.55, duration: 1200 });
+    this.tweens.add({ targets: this.disc, scaleY: 1, alpha: 1, duration: 1500, ease: 'Cubic.easeInOut' });
+    this.tweens.add({ targets: this.discLight, radius: 380, duration: 1500 });
+    this.tweens.add({ targets: this, ambient: 0.62, duration: 1500 });
     this.hint = hintPill(this, 'Press and drag to trace the dotted line with your light', H - 44);
-    this.time.delayedCall(14000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    this.time.delayedCall(11000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
+    this.time.delayedCall(1500, () => this.beginLine(0));
   }
 
   buildHud() {

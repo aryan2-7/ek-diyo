@@ -31,7 +31,6 @@ export default class Ending extends Phaser.Scene {
     const b = button(this, W - 190, H - 52, 'Play again', () => go(this, 'Title'), { w: 280, h: 60, size: 26 });
     b.setAlpha(0);
     this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: 3000 });
-    text(this, 24, H - 20, 'A game by Aryan Khatri  ·  Kathmandu University', { size: 18, color: CSS.cream, origin: [0, 1], depth: 20 }).setAlpha(0.7);
   }
 
   update(time) {

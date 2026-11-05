@@ -81,8 +81,8 @@ const SLOTS_FIVE = [
 ];
 
 /**
- * A diya sprite with 0-5 lit wicks. Used for the floating diya (Night 2, old single-wick art with extra wicks
- * drawn in) and, with texture 'five_diya', for the story-card progression and the ending.
+ * A diya sprite with 0-5 lit wicks. Used for the floating diya on Night 2 (the five-wick art, lit wicks
+ * at a lower count) and, with texture 'five_diya', for the story-card progression and the ending.
  */
 export class DiyaRig {
   constructor(scene, x, y, { width = 200, wicks = 1, depth = 60, texture = 'diya' } = {}) {
