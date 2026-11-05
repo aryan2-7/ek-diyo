@@ -66,6 +66,15 @@ export const Sfx = {
       master = ctx.createGain();
       master.gain.value = 0.7;
       master.connect(ctx.destination);
+      // Browsers keep audio locked until the first tap/key. Unlock on the very first one, anywhere,
+      // and start the ambient bells + drone then, so sound is simply on without finding a button.
+      const first = () => {
+        ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.removeEventListener(e, first, true));
+        const go = () => Sfx.startAmbient();
+        ctx.state === 'running' ? go() : ctx.resume().then(go, go);
+      };
+      ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, first, true));
+      if (ctx.state === 'running') this.startAmbient(); // already unlocked (e.g. returning from another page)
     }
   },
   unlock() {

@@ -8,6 +8,7 @@ Generated from `tools/process_assets.py`. Source files live in `art-source/` (no
 | `keeper_side` | sprite | 720px (33 KB) | Player walking sideways, Night 2 intro |
 | `diya` | sprite | 420px (30 KB) | Diya rig (cards, Night 2, Ending), Night 3 lamps, held diya |
 | `marigold_mala` | sprite | 640px (31 KB) | Night 2 collectible, Night 3 garland, HUD icon |
+| `five_diya` | sprite | 640px (65 KB) | Five-wick lamp: story-card progression and ending (flames light at its wick tips) |
 | `makhamali_mala` | sprite | 640px (32 KB) | (not used yet: spare for a richer Night 3 or title) |
 | `card_frame` | card | 1280px (222 KB) | Story cards |
 | `title_bg` | bg | 2048px (65 KB) | Title, Ending, card backdrops |
@@ -24,6 +25,7 @@ Generated from `tools/process_assets.py`. Source files live in `art-source/` (no
 | `obstacle_baskets` | sprite | 420px (65 KB) | Night 2 low obstacle |
 | `bg_n3` | bg | 2048px (129 KB) | Night 3 |
 | `cow` | sprite | 700px (53 KB) | Night 3, card art |
+| `cow_mala` | sprite | 700px (57 KB) | Night 3 cow after her first garland (replaces the loose garland overlay) |
 | `house_a` | sprite | 640px (70 KB) | Night 3 houses |
 | `house_b` | sprite | 700px (91 KB) | Night 3 houses |
 | `bg_n4` | bg | 2048px (168 KB) | Night 4 |

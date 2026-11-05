@@ -29,6 +29,7 @@ MANIFEST = {
     "keeper": ("sprite", 720),
     "keeper_side": ("sprite", 720),
     "diya": ("sprite", 420),
+    "five_diya": ("sprite", 640),
     "marigold_mala": ("sprite", 640),
     "makhamali_mala": ("sprite", 640),
     "card_frame": ("card", 1280),
@@ -49,6 +50,7 @@ MANIFEST = {
     # night 3
     "bg_n3": ("bg", 2048),
     "cow": ("sprite", 700),
+    "cow_mala": ("sprite", 700),
     "house_a": ("sprite", 640),
     "house_b": ("sprite", 700),
     # night 4

@@ -14,12 +14,24 @@ const R = 262; // disc radius
 const SPACING = 11; // distance between guide dots
 const HIT = 30; // how close the light must pass to light a dot
 const NEED = 0.93; // share of dots needed to finish a line
+const FLAME_DROP = 22; // the flame's base sits this far below the pointer, so its body is centred on the pointer
 
 const LINE_COLORS = [COLORS.marigold, COLORS.vermilion, COLORS.turmeric, COLORS.magenta, 0xfff3cf];
 const LINE_NAMES = ['The outer ring', 'The eight-pointed star', 'The lotus', 'The inner ring', 'The bindu'];
 
-function resample(poly, closed) {
+function resample(poly, closed, corners = false) {
   const pts = closed ? [...poly, poly[0]] : poly;
+  if (corners) {
+    // straight-edged shapes: split every edge into equal steps so each corner is exactly a dot
+    const out = [];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const n = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / SPACING));
+      for (let s = 0; s < n; s++) out.push({ x: a.x + ((b.x - a.x) * s) / n, y: a.y + ((b.y - a.y) * s) / n });
+    }
+    return out;
+  }
   const out = [pts[0]];
   let carry = 0;
   for (let i = 1; i < pts.length; i++) {
@@ -45,7 +57,7 @@ function circle(r, from = -Math.PI / 2) {
 function star(r) {
   const v = Array.from({ length: 8 }, (_, k) => ({ x: Math.cos(-Math.PI / 2 + (k * Math.PI) / 4) * r, y: Math.sin(-Math.PI / 2 + (k * Math.PI) / 4) * r }));
   const order = [0, 3, 6, 1, 4, 7, 2, 5];
-  return resample(order.map((i) => v[i]), true);
+  return resample(order.map((i) => v[i]), true, true);
 }
 
 function lotus(a) {
@@ -110,9 +122,11 @@ export default class Night4 extends Phaser.Scene {
     this.glow = this.add.graphics().setDepth(111).setBlendMode(Phaser.BlendModes.ADD);
     this.marker = this.add.graphics().setDepth(112);
 
-    // the Keeper's diya: four flames tonight, following the pointer
-    this.pen = new FlameCluster(this, 4, { size: 44, depth: 760, spread: 0.34 });
-    this.pen.setPosition(this.pointer.x, this.pointer.y);
+    // the light is a single flame, and that flame IS the cursor (the system arrow is hidden)
+    this.input.setDefaultCursor('none');
+    this.events.once('shutdown', () => this.input.setDefaultCursor('default'));
+    this.pen = new FlameCluster(this, 1, { size: 56, depth: 760 });
+    this.pen.setPosition(this.pointer.x, this.pointer.y + FLAME_DROP);
     this.add.particles(0, 0, 'ember', {
       lifespan: { min: 700, max: 1300 }, speedY: { min: -40, max: -90 }, speedX: { min: -20, max: 20 },
       scale: { start: 0.7, end: 0 }, alpha: { start: 0.9, end: 0 }, blendMode: 'ADD', frequency: 120,
@@ -251,6 +265,10 @@ export default class Night4 extends Phaser.Scene {
           g.lineBetween(CX + pts[i].x, CY + pts[i].y, CX + pts[j].x, CY + pts[j].y);
           gl.lineBetween(CX + pts[i].x, CY + pts[i].y, CX + pts[j].x, CY + pts[j].y);
         }
+        // round join at every lit dot, so corners and crossings have no gaps or notches
+        if (lit[i]) {
+          g.fillStyle(col, 1).fillCircle(CX + pts[i].x, CY + pts[i].y, w / 2);
+        }
       }
     });
     // where to start
@@ -284,13 +302,13 @@ export default class Night4 extends Phaser.Scene {
       }
     }
 
-    // the diya glides after the pointer
-    const px = this.pen.x + (this.pointer.x - this.pen.x) * Math.min(1, dt * 14);
-    const py = this.pen.y + (this.pointer.y - 30 - this.pen.y) * Math.min(1, dt * 14);
-    this.pen.setPosition(px, py);
+    // the flame sits exactly on the pointer
+    const px = this.pointer.x;
+    const py = this.pointer.y;
+    this.pen.setPosition(px, py + FLAME_DROP);
     this.pen.update(time);
     this.penLight.x = px;
-    this.penLight.y = py - 10;
+    this.penLight.y = py;
     this.penLight.radius = this.pointer.down ? 190 : 130;
 
     this.draw(time);

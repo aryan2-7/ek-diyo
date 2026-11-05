@@ -4,7 +4,8 @@ const defaults = { unlocked: 1, best: {}, muted: false };
 
 function load() {
   try {
-    return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}') };
+    // sound is always ON at the start of a visit (M mutes for the session), even if it was muted last time
+    return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}'), muted: false };
   } catch {
     return { ...defaults };
   }

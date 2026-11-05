@@ -29,11 +29,11 @@ export default class StoryCard extends Phaser.Scene {
     this.add.rectangle(0, 0, W, H, COLORS.soot, 0.28).setOrigin(0).setDepth(1);
 
     // the diya, gaining a wick
-    this.add.image(230, 560, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(5).setAlpha(0.7).setDepth(2);
-    this.rig = new DiyaRig(this, 230, 520, { width: 300, wicks: wicksBefore, depth: 10 });
+    this.add.image(230, 470, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(5).setAlpha(0.7).setDepth(2);
+    this.rig = new DiyaRig(this, 230, 490, { width: 250, wicks: wicksBefore, depth: 10, texture: 'five_diya' });
     const lit = Math.min(wicksBefore + 1, 5);
     this.caption = text(
-      this, 230, 640,
+      this, 230, 676,
       night >= 5 ? 'All five wicks burn.' : `Wick ${lit} is lit.\nIt travels with you into Night ${lit}.`,
       { size: 26, color: CSS.turmeric, depth: 12, bold: true, spacing: 4 },
     ).setAlpha(0);

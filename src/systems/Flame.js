@@ -70,14 +70,29 @@ const SLOTS = [
   { x: 0.32, y: 0.14, rot: -0.22 },
 ];
 
-/** A diya sprite with 0-5 lit wicks. Used for the floating diya (Night 2) and the story-card finale. */
+// The five-wick lamp (five_diya.webp) already has all five wicks drawn; each slot is where a wick tip is
+// (fractions of the sprite). They light centre first, then inner pair, then outer pair.
+const SLOTS_FIVE = [
+  { x: 0.503, y: 0.486, own: true },
+  { x: 0.165, y: 0.503, own: true },
+  { x: 0.826, y: 0.503, own: true },
+  { x: 0.022, y: 0.455, own: true },
+  { x: 0.974, y: 0.442, own: true },
+];
+
+/**
+ * A diya sprite with 0-5 lit wicks. Used for the floating diya (Night 2, old single-wick art with extra wicks
+ * drawn in) and, with texture 'five_diya', for the story-card progression and the ending.
+ */
 export class DiyaRig {
-  constructor(scene, x, y, { width = 200, wicks = 1, depth = 60 } = {}) {
+  constructor(scene, x, y, { width = 200, wicks = 1, depth = 60, texture = 'diya' } = {}) {
     this.scene = scene;
     this.x = x;
     this.y = y;
     this.depth = depth;
-    this.img = scene.add.image(x, y, 'diya').setDepth(depth);
+    this.five = texture === 'five_diya';
+    this.slotDefs = this.five ? SLOTS_FIVE : SLOTS;
+    this.img = scene.add.image(x, y, texture).setDepth(depth);
     this.k = width / this.img.width;
     this.img.setScale(this.k);
     this.slots = []; // { wick, flame }
@@ -90,12 +105,12 @@ export class DiyaRig {
   }
 
   _pos(i) {
-    const s = SLOTS[i];
+    const s = this.slotDefs[i];
     return { x: this.x + (s.x - 0.5) * this.img.displayWidth, y: this.y + (s.y - 0.5) * this.img.displayHeight };
   }
 
   _make(i) {
-    const s = SLOTS[i];
+    const s = this.slotDefs[i];
     const p = this._pos(i);
     let wick = null;
     let rise = 0;
@@ -104,7 +119,8 @@ export class DiyaRig {
       wick.setScale(this.k * 1.9);
       rise = wick.displayHeight * 0.92;
     }
-    const flame = new Flame(this.scene, p.x, p.y - rise, { size: this.img.displayWidth * 0.34, depth: this.depth + 3 });
+    const size = this.img.displayWidth * (this.five ? 0.17 : 0.34);
+    const flame = new Flame(this.scene, p.x, p.y - rise, { size, depth: this.depth + 3 });
     return { wick, flame, rise };
   }
 
@@ -119,7 +135,7 @@ export class DiyaRig {
   /** Light one more wick with a little pop. */
   addWick() {
     const i = this.count;
-    if (i >= SLOTS.length) return;
+    if (i >= this.slotDefs.length) return;
     const slot = this._make(i);
     this.slots.push(slot);
     this.count++;

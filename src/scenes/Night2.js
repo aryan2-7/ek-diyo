@@ -10,8 +10,8 @@ import { text, titleText, banner, hintPill, tornPaper, go, fadeIn, paperGrain, g
 // ---- tuning -------------------------------------------------------------
 const GROUND = 655; // y of the street the dog runs on
 const DOG_X = 330;
-const GRAVITY = 2600;
-const JUMP_V = -1000;
+const GRAVITY = 2400;
+const JUMP_V = -1200; // a big, floaty leap: about 300 px high when you hold the button
 const BASE_SPEED = 400;
 const MAX_SPEED = 520;
 const TRACK = 36000; // distance (px) from start to the gate  (~80 s)
@@ -41,7 +41,8 @@ export default class Night2 extends Phaser.Scene {
     this.stumbles = 0;
     this.stumble = 0;
     this.invuln = 0;
-    this.nextSpawn = 700;
+    this.nextSpawn = 1100;
+    this.lastRest = false;
     this.obs = [];
     this.gar = [];
     this.gate = null;
@@ -169,35 +170,52 @@ export default class Night2 extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------- spawning
+  // Each pattern is a few obstacles at x offsets (px) plus how far to wait before the next one.
+  // Offsets are tuned to the bigger jump (~330-470 px of air at run speed): close pairs are one long
+  // leap, wide pairs need two jumps, and "rest" is just a trail of garlands to catch.
   spawnPattern() {
-    const x = W + 150;
-    const r = Math.random();
+    const x0 = W + 150;
+    const PATTERNS = [
+      { w: 3, obs: [['pots', 0]], gap: [850, 1350] },
+      { w: 3, obs: [['baskets', 0]], gap: [800, 1250] },
+      { w: 2, obs: [['pots', 0], ['baskets', 330]], gap: [950, 1450] }, // one long leap clears both
+      { w: 2, obs: [['baskets', 0], ['pots', 300]], gap: [950, 1450] },
+      { w: 2, obs: [['pots', 0], ['pots', 640]], gap: [900, 1400] }, // two separate jumps
+      { w: 1, obs: [['baskets', 0], ['pots', 520], ['baskets', 1080]], gap: [1000, 1500] }, // a rhythm of three
+      { w: 1, obs: [], rest: true, gap: [500, 800] }, // breather: garland trail only
+    ];
+    const total = PATTERNS.reduce((n, p) => n + p.w, 0);
+    let roll = Math.random() * total;
+    const pat = PATTERNS.find((p) => (roll -= p.w) < 0) || PATTERNS[0];
+    // never two breathers in a row
+    const chosen = pat.rest && this.lastRest ? PATTERNS[0] : pat;
+    this.lastRest = !!chosen.rest;
+
     const place = (type, px) => {
       const def = OBSTACLES[type];
       const spr = this.add.image(px, GROUND + 6, def.key).setOrigin(0.5, 1).setDepth(GROUND + 5);
       spr.setScale(def.h / spr.height);
       this.obs.push({ spr, def, x: px });
     };
-    const arc = (cx) => {
-      [-130, 0, 130].forEach((dx, i) => this.addGarland(cx + dx, GROUND - (i === 1 ? 205 : 172)));
+    // a three-garland arc that peaks near the top of the jump
+    const arc = (cx, spread = 140) => {
+      [-spread, 0, spread].forEach((dx, i) => this.addGarland(cx + dx, GROUND - (i === 1 ? 300 : 215)));
     };
-    let extra = 0;
-    if (r < 0.4) {
-      place('pots', x);
-      arc(x);
-    } else if (r < 0.7) {
-      place('baskets', x);
-      arc(x);
+
+    if (chosen.rest) {
+      // a gentle wave of garlands at jump height, no obstacles
+      for (let i = 0; i < 5; i++) this.addGarland(x0 + i * 170, GROUND - 120 - Math.sin((i / 4) * Math.PI) * 170);
     } else {
-      place('pots', x);
-      place('baskets', x + 540);
-      arc(x);
-      arc(x + 540);
-      extra = 540;
+      chosen.obs.forEach(([type, dx]) => place(type, x0 + dx));
+      // one arc over each obstacle, or one wide arc across a close pair
+      const xs = chosen.obs.map(([, dx]) => dx);
+      if (xs.length === 2 && xs[1] - xs[0] < 400) arc(x0 + (xs[0] + xs[1]) / 2, 190);
+      else xs.forEach((dx) => arc(x0 + dx));
+      // sometimes a low garland in the gap after the last obstacle
+      if (Math.random() < 0.5) this.addGarland(x0 + xs[xs.length - 1] + 300, GROUND - 98);
     }
-    // sometimes a ground-level garland in the gap
-    if (Math.random() < 0.5) this.addGarland(x + 300 + extra, GROUND - 98);
-    this.nextSpawn = this.dist + extra + Phaser.Math.Between(560, 860);
+    const last = chosen.obs.length ? chosen.obs[chosen.obs.length - 1][1] : 800;
+    this.nextSpawn = this.dist + last + Phaser.Math.Between(chosen.gap[0], chosen.gap[1]);
   }
 
   addGarland(x, y) {
@@ -307,7 +325,7 @@ export default class Night2 extends Phaser.Scene {
     if (this.phase === 'done') return;
     if (!this.onGround) {
       this.dog.setTexture('dog_jump');
-      this.dog.setRotation(Phaser.Math.Clamp(this.vy / 4200, -0.22, 0.18));
+      this.dog.setRotation(Phaser.Math.Clamp(this.vy / 3200, -0.34, 0.28));
     } else {
       this.gallop += dt * (4 + this.speed / 60);
       const frame = this.speed > 30 ? Math.floor(this.gallop) % 2 : 0;

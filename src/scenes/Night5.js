@@ -9,9 +9,10 @@ import { text, titleText, button, banner, hintPill, tornPaper, go, fadeIn, cover
 
 // ---- tuning -------------------------------------------------------------
 const ROUNDS = [1, 2, 3, 3, 4, 4, 5]; // colours Yamuna shows in each of the seven rounds
-const MAX_MISTAKES = 4;
+const MAX_MISTAKES = 3; // three slips and Yama arrives
 const TIME_LIMIT = 170; // seconds before Yama reaches the door of the room anyway
 const STEP = 620; // ms between the colours Yamuna points to
+const INPUT_DELAY = 380; // ms after the last colour flashes before you can start tapping (the flash itself lasts ~500)
 // ---------------------------------------------------------------------------
 
 // the seven powders on the thali, as fractions of the thali picture
@@ -53,7 +54,7 @@ export default class Night5 extends Phaser.Scene {
     this.inputIdx = 0;
     this.t = 0;
     this.threat = 0;
-    this.stage = 0;
+    this.stage = 1; // Yama is already at the door from the start
     this.ambientBase = 0.34;
   }
 
@@ -82,8 +83,8 @@ export default class Night5 extends Phaser.Scene {
     this.yamuna.setScale(YAMUNA.h / this.yamuna.height);
 
     // Yama, at the door
-    this.yama = this.add.image(YAMA_STAGES[0].x, 716, 'yama').setOrigin(0.5, 1).setDepth(190);
-    this.yamaState = { ...YAMA_STAGES[0] };
+    this.yama = this.add.image(YAMA_STAGES[1].x, 716, 'yama').setOrigin(0.5, 1).setDepth(190);
+    this.yamaState = { ...YAMA_STAGES[1] };
     this.applyYama();
 
     // the thali
@@ -159,7 +160,7 @@ export default class Night5 extends Phaser.Scene {
     this.setStatus(this.round === 0 ? 'Watch the thali…' : 'Watch again…');
     this.tweens.add({ targets: this.yamuna, y: YAMUNA.y - 10, yoyo: true, duration: 220 });
     this.seq.forEach((n, i) => this.time.delayedCall(700 + i * STEP, () => this.flash(n, true)));
-    this.time.delayedCall(700 + this.seq.length * STEP + 300, () => {
+    this.time.delayedCall(700 + (this.seq.length - 1) * STEP + INPUT_DELAY, () => {
       if (this.phase !== 'show') return;
       this.phase = 'input';
       this.setStatus('Your turn');
@@ -231,7 +232,8 @@ export default class Night5 extends Phaser.Scene {
   updateThreat() {
     this.threat = Math.max(this.mistakes / MAX_MISTAKES, this.t / TIME_LIMIT);
     if (this.threat >= 1 && this.phase !== 'won' && this.phase !== 'lost') return this.lose();
-    const stage = this.threat < 0.25 ? 0 : this.threat < 0.5 ? 1 : this.threat < 0.75 ? 2 : 3;
+    // stage 1 = waiting at the door (visible from the start), 2 and 3 = one and two slips closer
+    const stage = this.threat < 1 / 3 ? 1 : this.threat < 2 / 3 ? 2 : 3;
     if (stage !== this.stage) {
       this.stage = stage;
       const to = YAMA_STAGES[stage];

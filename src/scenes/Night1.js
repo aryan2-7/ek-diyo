@@ -14,13 +14,14 @@ const MAX_PLATES = 3;
 const LIGHT_TIME = 0.85; // seconds beside a plate to light it
 const EAT_TIME = 2.4;
 const SPEED = 340;
-const WALK = { top: 515, bottom: 692 };
+const WALK = { top: 598, bottom: 704 }; // just the terracotta floor, not the parapet walls
 // ---------------------------------------------------------------------------
 
 const lerp = Phaser.Math.Linear;
 const depthT = (y) => Phaser.Math.Clamp((y - WALK.top) / (WALK.bottom - WALK.top), 0, 1);
-const walkLeft = (y) => lerp(150, 262, depthT(y));
-const walkRight = (y) => lerp(1090, 1010, depthT(y));
+// the floor widens toward the viewer; its edges follow the roof tiles (left) and the side wall (right)
+const walkLeft = (y) => lerp(300, 365, depthT(y));
+const walkRight = (y) => lerp(1010, 1115, depthT(y));
 
 
 export default class Night1 extends Phaser.Scene {

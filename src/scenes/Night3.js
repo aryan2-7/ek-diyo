@@ -8,22 +8,32 @@ import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { text, titleText, button, banner, hintPill, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
 
+const lerp = Phaser.Math.Linear;
+
 // ---- tuning -------------------------------------------------------------
 const DURATION = 75; // seconds until midnight
 const MAX_SPARKS = 5;
-const FLOOR = { top: 482, bottom: 692 };
-const BASE_Y = 446; // where the houses stand
-const HOUSE_H = 300;
+const FLOOR = { top: 420, bottom: 700 };
+// the courtyard floor in bg_n3: [y, left edge, right edge] - keeps everyone off the side benches and walls
+const EDGES = [[420, 240, 1040], [500, 225, 1065], [600, 135, 1155], [700, 40, 1245]];
+function edgeAt(y, i) {
+  if (y <= EDGES[0][0]) return EDGES[0][i];
+  for (let k = 1; k < EDGES.length; k++) {
+    if (y <= EDGES[k][0]) return lerp(EDGES[k - 1][i], EDGES[k][i], (y - EDGES[k - 1][0]) / (EDGES[k][0] - EDGES[k - 1][0]));
+  }
+  return EDGES[EDGES.length - 1][i];
+}
+const leftAt = (y) => edgeAt(y, 1);
+const rightAt = (y) => edgeAt(y, 2);
 const REFILL = 1.15; // oil per second while the Keeper stands beside a lamp
-const HOUSES = [
-  { key: 'house_b', x: 170, door: -0.28 },
-  { key: 'house_a', x: 470, door: 0 },
-  { key: 'house_b', x: 790, door: -0.28 },
-  { key: 'house_a', x: 1090, door: 0 },
+// the four lamps stand on the courtyard floor in a shallow arc, framing the middle archway
+const LAMPS = [
+  { x: 270, y: 478 },
+  { x: 500, y: 436 },
+  { x: 790, y: 436 },
+  { x: 1020, y: 478 },
 ];
 // ---------------------------------------------------------------------------
-
-const lerp = Phaser.Math.Linear;
 
 export default class Night3 extends Phaser.Scene {
   constructor() {
@@ -55,15 +65,12 @@ export default class Night3 extends Phaser.Scene {
     this.light = new Lighting(this, { depth: 800, ambient: 0.4 });
     paperGrain(this, 0.12);
 
-    // houses, each with a door-lamp that slowly burns down
-    HOUSES.forEach((h, i) => {
-      const house = this.add.image(h.x, BASE_Y, h.key).setOrigin(0.5, 1).setDepth(100);
-      house.setScale(HOUSE_H / house.height);
-      const x = h.x + h.door * house.displayWidth;
-      const y = BASE_Y + 34;
-      const spr = this.add.image(x, y, 'diya').setOrigin(0.5, 0.6).setDepth(745);
-      spr.setScale(60 / spr.width);
-      const flame = new Flame(this, x + spr.displayWidth * 0.46, y - spr.displayHeight * 0.45, { size: 40, depth: 750 });
+    // lamps on the courtyard floor, each slowly burning down
+    LAMPS.forEach((h) => {
+      const { x, y } = h;
+      const spr = this.add.image(x, y, 'diya').setOrigin(0.5, 0.6).setDepth(y);
+      spr.setScale(64 / spr.width);
+      const flame = new Flame(this, x + spr.displayWidth * 0.46, y - spr.displayHeight * 0.45, { size: 42, depth: y + 2 });
       const light = this.light.add({ x, y: y - 40, radius: 210, flicker: 0.06 });
       this.lamps.push({ x, y, spr, flame, light, oil: Phaser.Math.FloatBetween(0.75, 1), lit: true, outT: 0, penalised: false, near: false });
     });
@@ -73,12 +80,10 @@ export default class Night3 extends Phaser.Scene {
     this.cow = { x: 640, y: 600, dir: 1, tx: 640, ty: 600, pause: 2, eat: 0, wear: false };
     this.cowSpr = this.add.image(this.cow.x, this.cow.y, 'cow').setOrigin(0.5, 1);
     this.cowSpr.setScale(270 / this.cowSpr.width);
-    this.cowMala = this.add.image(0, 0, 'marigold_mala').setVisible(false);
-    this.cowMala.setScale(96 / this.cowMala.width);
 
     // the Keeper, three wicks tonight
     this.k = new Keeper(this, this.light, {
-      x: 640, y: 660, top: FLOOR.top, bottom: FLOOR.bottom, left: () => 70, right: () => 1210,
+      x: 430, y: 630, top: FLOOR.top, bottom: FLOOR.bottom, left: leftAt, right: rightAt,
       scale: [0.2, 0.3], speed: 360, wicks: 3, flameSize: 46, lightRadius: 300,
     });
     this.k.onFirstMove = () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 800, delay: 3000 });
@@ -145,7 +150,7 @@ export default class Night3 extends Phaser.Scene {
     this.bars.clear();
     for (const l of this.lamps) {
       const dx = k.x - l.x;
-      const dy = (k.y - (l.y + 70)) * 1.5;
+      const dy = (k.y - (l.y + 18)) * 1.5;
       l.near = !this.over && dx * dx + dy * dy < 150 * 150;
       if (l.near) l.oil = Math.min(1, l.oil + REFILL * dt);
       else l.oil = Math.max(0, l.oil - rate * dt);
@@ -205,8 +210,8 @@ export default class Night3 extends Phaser.Scene {
     } else if (c.pause > 0) {
       c.pause -= dt;
       if (c.pause <= 0) {
-        c.tx = Phaser.Math.Between(180, 1100);
-        c.ty = Phaser.Math.Between(560, 660);
+        c.ty = Phaser.Math.Between(540, 665);
+        c.tx = Phaser.Math.Between(leftAt(c.ty) + 140, rightAt(c.ty) - 140);
       }
     } else {
       const dx = c.tx - c.x;
@@ -224,12 +229,6 @@ export default class Night3 extends Phaser.Scene {
     this.cowSpr.setPosition(c.x, c.y - bob).setFlipX(c.dir < 0).setDepth(c.y);
     if (c.eat > 0) this.cowSpr.setAngle(Math.sin(time * 0.012) * 1.8);
     else this.cowSpr.setAngle(0);
-    // the garland around her neck
-    if (c.wear) {
-      const w = this.cowSpr.displayWidth;
-      const h = this.cowSpr.displayHeight;
-      this.cowMala.setVisible(true).setPosition(c.x + c.dir * w * 0.3, c.y - bob - h * 0.58).setAngle(c.dir * -38).setFlipX(c.dir < 0).setDepth(c.y + 1);
-    }
     // the cow is solid: nudge the Keeper around her
     const k = this.k;
     const ex = (k.x - c.x) / 115;
@@ -246,8 +245,8 @@ export default class Night3 extends Phaser.Scene {
     let x;
     let y;
     for (let i = 0; i < 30; i++) {
-      x = Phaser.Math.Between(140, 1140);
-      y = Phaser.Math.Between(FLOOR.top + 20, FLOOR.bottom - 20);
+      y = Phaser.Math.Between(FLOOR.top + 30, FLOOR.bottom - 20);
+      x = Phaser.Math.Between(leftAt(y) + 40, rightAt(y) - 40);
       if (Math.hypot(x - this.cow.x, (y - this.cow.y) * 2) > 260 && Math.hypot(x - this.k.x, y - this.k.y) > 200) break;
     }
     const spr = this.add.image(x, y, 'marigold_mala').setDepth(y);
@@ -291,6 +290,8 @@ export default class Night3 extends Phaser.Scene {
     this.carry = false;
     this.garlandsGiven++;
     this.cow.wear = true;
+    // from now on she wears the garland: swap to the garlanded cow art (same size and pose)
+    this.cowSpr.setTexture('cow_mala');
     this.cow.eat = 3.6;
     this.blessing = 9;
     this.sparks = Math.min(MAX_SPARKS, this.sparks + 1);

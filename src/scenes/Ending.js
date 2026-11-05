@@ -19,8 +19,8 @@ export default class Ending extends Phaser.Scene {
     globalKeys(this);
     coverBg(this, 'title_bg', 0).setTint(0x4a4d73);
     this.add.rectangle(0, 0, W, H, COLORS.soot, 0.25).setOrigin(0).setDepth(1);
-    this.add.image(W / 2, 450, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(6).setAlpha(0.6).setDepth(2);
-    this.rig = new DiyaRig(this, W / 2, 492, { width: 330, wicks: 5, depth: 10 });
+    this.add.image(W / 2, 430, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(6).setAlpha(0.6).setDepth(2);
+    this.rig = new DiyaRig(this, W / 2, 440, { width: 300, wicks: 5, depth: 10, texture: 'five_diya' });
 
     const t1 = titleText(this, W / 2, 130, 'Shubha Tihar', { size: 96, color: CSS.cream, depth: 20 }).setAlpha(0);
     const t2 = text(this, W / 2, 210, 'शुभ तिहार  ·  five days, five lights', { size: 34, color: CSS.turmeric, depth: 20, bold: true }).setAlpha(0);
