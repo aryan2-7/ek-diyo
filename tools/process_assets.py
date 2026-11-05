@@ -55,6 +55,9 @@ MANIFEST = {
     "house_b": ("sprite", 700),
     # night 4
     "bg_n4": ("bg", 2048),
+    "dung_pat": ("sprite", 560),
+    "bowl_rice": ("sprite", 560),
+    "bowl_curd": ("sprite", 560),
     # night 5
     "bg_n5": ("bg", 2048),
     "yamuna": ("sprite", 700),

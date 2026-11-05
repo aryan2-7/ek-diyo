@@ -8,7 +8,7 @@ export const PROLOGUE = {
   art: 'keeper',
   title: 'Tihar: the festival of lights',
   body:
-    'For five days every autumn, Nepal says thank you: to the crow, the dog, the cow, to ourselves, and to our brothers and sisters.\n\n' +
+    'For five days every autumn, Nepal says thank you: to the crow, the dog, the cow, to the hill and the self, and to our brothers and sisters.\n\n' +
     'Light a diya, and the dark steps back. Each night one more wick joins the flame. Carry it through all five.',
   next: 'Night1',
   wicksBefore: 0,
@@ -73,17 +73,17 @@ export const NIGHTS = {
     id: 4,
     scene: 'Night4',
     day: 'Day 4',
-    name: 'Mha Puja',
-    who: 'the Self',
-    goal: 'Trace the mandala with your light, one line at a time.',
+    name: 'Govardhan Puja',
+    who: 'the Hill of Offerings',
+    goal: 'Stack the annakut, offering by offering, and crown it with the maha-deep.',
     bg: 'bg_n4',
     card: {
       art: 'keeper',
-      title: 'Mha Puja: Worship of the Self',
+      title: 'Govardhan Puja: the Hill of Food',
       body:
-        'On the fourth day the Newar community celebrates Mha Puja, the worship of one\'s own self. A mandala is drawn on the floor and each person is blessed as they sit before it.\n\n' +
-        'It is a quiet reminder that the one who carries the light deserves care too.',
-      fact: 'Festival fact · Day 4 · Mha Puja',
+        'On the fourth day families build a small hill of cow dung and offerings — the annakut, a "mountain of food" — and crown it with a lit lamp, walking around it in circles. It retells the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.\n\n' +
+        'For the Newar community it is also Mha Puja, the worship of the self, and Nepal Sambat, the Newari New Year. A quiet reminder: the one who carries the light deserves care too.',
+      fact: 'Festival fact · Day 4 · Govardhan Puja',
     },
     next: 'Night5',
   },

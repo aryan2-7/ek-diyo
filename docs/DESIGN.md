@@ -16,7 +16,7 @@ Each card lights the next wick on a big diya. Nights unlock in order and can be 
 | 1 Crows | stand beside plates to light them, crows land on lit plates | dusk runs out | feeding the crows first, as the tradition says |
 | 2 Dog | run and jump (auto-run) | none; stumbles slow you down | the loyal guard dog at the gate |
 | 3 Cow and light | refill door-lamps, give the cow a garland | sparks run out | Laxmi visits lit homes; the cow is honoured |
-| 4 Mandala | trace five lines with the light | none (calm night) | Mha Puja, the mandala of the self |
+| 4 Annakut | stack swinging offerings, cap with the maha-deep | lean past the limit slides the top layers off | Govardhan Puja, the hill of food, crowned with a lamp |
 | 5 Tika | repeat colour sequences (memory game) | Yama arrives (slips or time) | seven-colour tika, Yamuna and Yama |
 
 **Feel targets:** about 10 minutes total, no night longer than about 90 s, one new idea per night,

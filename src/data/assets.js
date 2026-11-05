@@ -10,7 +10,7 @@ export const ASSETS = [
   // night 3
   'bg_n3', 'cow', 'cow_mala', 'house_a', 'house_b',
   // night 4
-  'bg_n4',
+  'bg_n4', 'dung_pat', 'bowl_rice', 'bowl_curd',
   // night 5
   'bg_n5', 'yamuna', 'yama', 'yama_pleased', 'tika_thali', 'dry_fruit_plate',
 ];

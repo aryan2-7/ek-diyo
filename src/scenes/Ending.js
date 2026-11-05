@@ -24,7 +24,7 @@ export default class Ending extends Phaser.Scene {
 
     const t1 = titleText(this, W / 2, 130, 'Shubha Tihar', { size: 96, color: CSS.cream, depth: 20 }).setAlpha(0);
     const t2 = text(this, W / 2, 210, 'शुभ तिहार  ·  five days, five lights', { size: 34, color: CSS.turmeric, depth: 20, bold: true }).setAlpha(0);
-    const t3 = text(this, W / 2, 640, 'The crow, the dog, the cow, the self, the sister and the brother:\nall of them guarded, all of them thanked.', { size: 26, color: CSS.cream, depth: 20, spacing: 6 }).setAlpha(0);
+    const t3 = text(this, W / 2, 640, 'The crow, the dog, the cow, the hill of offerings, the sister and the brother:\nall of them guarded, all of them thanked.', { size: 26, color: CSS.cream, depth: 20, spacing: 6 }).setAlpha(0);
     [t1, t2, t3].forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, duration: 1200, delay: 600 + i * 700 }));
     this.time.delayedCall(900, () => Sfx.fanfare());
 

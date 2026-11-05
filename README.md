@@ -12,7 +12,7 @@ About 10 minutes start to finish. Runs in any modern browser, desktop or phone (
 | 1 | Kaag Tihar (crows) | Light offering plates on the rooftop and feed ten crows before dusk fades |
 | 2 | Kukur Tihar (dogs) | Run the street as the guard dog: jump the pots, gather marigold garlands, reach the gate |
 | 3 | Gai Tihar & Laxmi Puja | Keep four house-lamps burning until midnight, garland the cow for a blessing |
-| 4 | Mha Puja | Trace a mandala line by line with the light of your diya |
+| 4 | Govardhan Puja | Stack the annakut hill of offerings and crown it with the maha-deep |
 | 5 | Bhai Tika | Repeat Yamuna's colours to finish the seven-colour tika before Yama arrives |
 
 ## Controls
@@ -21,7 +21,7 @@ About 10 minutes start to finish. Runs in any modern browser, desktop or phone (
 |---|---|---|
 | Nights 1 and 3 (walk) | Arrow keys / WASD, or click and drag | Touch and drag |
 | Night 2 (run) | Space / W / Up, or click. Hold for a higher jump | Tap anywhere |
-| Night 4 (mandala) | Click and drag (or hold Space + arrow keys) | Touch and drag |
+| Night 4 (annakut stacking) | Click / tap / Space to drop the swinging offering | Tap to drop |
 | Night 5 (tika) | Click a powder, or press 1 to 7 | Tap a powder |
 | Anywhere | `M` sound on/off, `F` fullscreen | |
 
@@ -92,7 +92,7 @@ The raw art (about 57 MB) is deliberately **not** in git; keep your original zip
 
 Each night has a block of constants at the top of its scene file (duration, speeds, goals):
 `Night1.js` (`DURATION`, `GOAL`, `MAX_PLATES`), `Night2.js` (`TRACK`, speeds, jump),
-`Night3.js` (`DURATION`, drain rate, gust timing), `Night4.js` (`HIT`, `NEED`),
+`Night3.js` (`DURATION`, drain rate, gust timing), `Night4.js` (`DROP`, `NEED`, `LEAN_MAX`, pacing),
 `Night5.js` (`ROUNDS`, `MAX_MISTAKES`, `TIME_LIMIT`).
 
 ## Credits and licences
