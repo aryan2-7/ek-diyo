@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
-import { W, H, CSS } from '../config.js';
+import { W, H, COLORS, CSS } from '../config.js';
 import { NIGHTS, PROLOGUE, IMPLEMENTED } from '../data/nights.js';
-import { state } from '../state.js';
+import { state, bestLine } from '../state.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, go, fadeIn, coverBg, globalKeys, paperGrain } from '../ui/ui.js';
+import { text, titleText, button, go, fadeIn, coverBg, globalKeys, paperGrain, hudButtons } from '../ui/ui.js';
 
 export default class Title extends Phaser.Scene {
   constructor() {
@@ -19,6 +19,7 @@ export default class Title extends Phaser.Scene {
     fadeIn(this, 1000);
     coverBg(this, 'title_bg', 0);
     globalKeys(this);
+    hudButtons(this, { x: W - 44 });
 
     // twinkling stars in the sky
     for (let i = 0; i < 22; i++) {
@@ -60,7 +61,8 @@ export default class Title extends Phaser.Scene {
     // sound is on by default, but let the title settle for a beat before the ambience begins
     this.time.delayedCall(2400, () => Sfx.startAmbient());
 
-    // night select
+    // night select (hover a finished night to see your best)
+    const best = text(this, 36, 704, '', { size: 20, color: CSS.turmeric, origin: [0, 0.5], depth: 30 });
     text(this, 190, 586, 'Nights', { size: 22, color: CSS.cream, depth: 30 }).setAlpha(0.85);
     for (let n = 1; n <= 5; n++) {
       const x = 80 + (n - 1) * 78;
@@ -68,10 +70,17 @@ export default class Title extends Phaser.Scene {
       const d = this.add.image(x, 632, 'diya').setDepth(30);
       d.setScale(56 / d.width).setAlpha(open ? 1 : 0.3);
       const num = text(this, x, 668, String(n), { size: 22, color: open ? CSS.turmeric : CSS.cream, depth: 30, bold: true }).setAlpha(open ? 1 : 0.45);
+      if (bestLine(n)) this.add.circle(x, 598, 5, COLORS.turmeric, 1).setDepth(30); // finished
       if (open) {
         d.setInteractive({ useHandCursor: true });
-        d.on('pointerover', () => this.tweens.add({ targets: d, scale: (56 / d.width) * 1.15, duration: 100 }));
-        d.on('pointerout', () => this.tweens.add({ targets: d, scale: 56 / d.width, duration: 100 }));
+        d.on('pointerover', () => {
+          this.tweens.add({ targets: d, scale: (56 / d.width) * 1.15, duration: 100 });
+          best.setText(bestLine(n) ? `Night ${n} best: ${bestLine(n)}` : '');
+        });
+        d.on('pointerout', () => {
+          this.tweens.add({ targets: d, scale: 56 / d.width, duration: 100 });
+          best.setText('');
+        });
         d.on('pointerup', () => {
           Sfx.click();
           Sfx.startAmbient();

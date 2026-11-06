@@ -3,7 +3,7 @@ import { W, H, COLORS, CSS } from '../config.js';
 import { NIGHTS } from '../data/nights.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, go, fadeIn, coverBg, globalKeys } from '../ui/ui.js';
+import { text, titleText, button, go, fadeIn, coverBg, globalKeys, hudButtons } from '../ui/ui.js';
 
 /**
  * Shown before Night 1 (prologue) and after every night:
@@ -24,6 +24,7 @@ export default class StoryCard extends Phaser.Scene {
     const { card, stats, next, wicksBefore, night } = this.d;
     fadeIn(this, 700);
     globalKeys(this);
+    hudButtons(this, { x: W - 44 });
 
     coverBg(this, card.bg || 'title_bg', 0).setTint(0x3d3f5c);
     this.add.rectangle(0, 0, W, H, COLORS.soot, 0.28).setOrigin(0).setDepth(1);
@@ -74,7 +75,11 @@ export default class StoryCard extends Phaser.Scene {
       this.tweens.add({ targets: this.caption, alpha: 1, duration: 600 });
     });
 
-    const proceed = () => go(this, next);
+    let ready = false;
+    this.time.delayedCall(2300, () => (ready = true)); // keys only work once the button is showing
+    const proceed = () => {
+      if (ready) go(this, next);
+    };
     this.btn = button(this, 1050, 612, night === 0 ? 'Light the first night' : 'Continue', proceed, { w: 320, h: 64, size: 28 });
     this.btn.setAlpha(0);
     this.tweens.add({ targets: this.btn, alpha: 1, duration: 500, delay: 2300 });

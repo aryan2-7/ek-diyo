@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const GROUND = 655; // y of the street the dog runs on
@@ -109,10 +109,11 @@ export default class Night2 extends Phaser.Scene {
       this.input.keyboard.on(`keydown-${k}`, press);
       this.input.keyboard.on(`keyup-${k}`, release);
     });
-    this.input.on('pointerdown', press);
+    this.input.on('pointerdown', canvasOnly(press)); // taps on buttons / HUD icons must not jump
     this.input.on('pointerup', release);
 
     this.buildHud();
+    hudButtons(this, { pause: true });
     // how to play: the run starts only once the player says "Got it"
     instructions(this, { kicker: 'DAY 2  ·  NIGHT 2', title: NIGHTS[2].name, sub: NIGHTS[2].goal }, () => this.startIntro());
   }

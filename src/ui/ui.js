@@ -119,7 +119,16 @@ export function banner(scene, { kicker, title, sub }, { hold = 2600, keep = fals
  * How-to-play panel: the night banner plus a "Got it" button, so the level only starts
  * when the player says so. onGo fires just after the panel fades away.
  */
+const seenTutorial = new Set(); // nights whose how-to-play panel was already shown this visit
+
 export function instructions(scene, info, onGo, { delay = 450 } = {}) {
+  // replays (Try again, restart, picking the night again) skip the panel: just the title for a beat, then play
+  if (seenTutorial.has(info.kicker)) {
+    banner(scene, info, { hold: 1100 });
+    scene.time.delayedCall(450, onGo);
+    return;
+  }
+  seenTutorial.add(info.kicker);
   const panel = banner(scene, info, { keep: true });
   let btn = null;
   let done = false;
@@ -158,4 +167,87 @@ export function hintPill(scene, str, y = H - 46) {
 export function globalKeys(scene) {
   scene.input.keyboard.on('keydown-M', () => Sfx.toggleMute());
   scene.input.keyboard.on('keydown-F', () => scene.scale.toggleFullscreen());
+}
+
+/** Wrap a scene-level pointer handler so it ignores taps that landed on a button or HUD icon. */
+export const canvasOnly = (fn) => (p, over) => {
+  if (!over || !over.length) fn(p);
+};
+
+/**
+ * Small speaker (and optional pause) icons so touch players can mute and pause.
+ * pause: true also wires Esc / P to the pause menu. Returns nothing; clean-up is automatic.
+ */
+export function hudButtons(scene, { pause = false, x = W / 2 - 34, y = 44 } = {}) {
+  const make = (cx, draw, onClick) => {
+    const c = scene.add.container(cx, y).setDepth(960);
+    const g = scene.add.graphics();
+    tornPaper(g, -25, -22, 50, 44, { seed: Math.round(cx) | 1, amp: 1.6 });
+    const icon = scene.add.graphics();
+    c.add([g, icon]);
+    c.setSize(60, 54);
+    c.setInteractive(new Phaser.Geom.Rectangle(0, 0, 60, 54), Phaser.Geom.Rectangle.Contains);
+    if (c.input) c.input.cursor = 'pointer';
+    c.on('pointerup', () => {
+      Sfx.click();
+      onClick();
+    });
+    draw(icon);
+    return { c, icon, draw };
+  };
+
+  const drawSpeaker = (icon) => {
+    icon.clear();
+    icon.fillStyle(COLORS.indigo, 1);
+    icon.fillPoints([{ x: -11, y: -5 }, { x: -5, y: -5 }, { x: 3, y: -12 }, { x: 3, y: 12 }, { x: -5, y: 5 }, { x: -11, y: 5 }], true);
+    icon.lineStyle(3, COLORS.indigo, 1);
+    if (Sfx.muted) {
+      icon.lineStyle(3.5, COLORS.vermilion, 1);
+      icon.lineBetween(8, -8, 18, 8);
+      icon.lineBetween(18, -8, 8, 8);
+    } else {
+      icon.beginPath();
+      icon.arc(5, 0, 8, -0.9, 0.9);
+      icon.strokePath();
+      icon.beginPath();
+      icon.arc(5, 0, 14, -0.9, 0.9);
+      icon.strokePath();
+    }
+  };
+  const sound = make(x, drawSpeaker, () => Sfx.toggleMute());
+  let shown = Sfx.muted;
+  const refresh = () => {
+    if (shown !== Sfx.muted) {
+      shown = Sfx.muted;
+      drawSpeaker(sound.icon);
+    }
+  };
+  scene.events.on(Phaser.Scenes.Events.UPDATE, refresh);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, refresh));
+
+  if (pause) {
+    make(x + 68, (icon) => {
+      icon.fillStyle(COLORS.indigo, 1);
+      icon.fillRoundedRect(-9, -11, 6, 22, 2);
+      icon.fillRoundedRect(3, -11, 6, 22, 2);
+    }, () => openPause(scene));
+    scene.input.keyboard.on('keydown-ESC', () => openPause(scene));
+    scene.input.keyboard.on('keydown-P', () => openPause(scene));
+  }
+}
+
+/** Freeze this scene and show the pause menu on top. */
+export function openPause(scene) {
+  if (scene._leaving || scene.scene.isPaused() || scene.scene.isSleeping()) return;
+  scene.scene.pause();
+  scene.scene.launch('Pause', { from: scene.scene.key });
+}
+
+/** The shared "you lost" overlay: dim the scene, say why, offer Try again / Back to the start. */
+export function loseScreen(scene, title, line, { size = 64 } = {}) {
+  scene.add.rectangle(0, 0, W, H, COLORS.soot, 0.5).setOrigin(0).setDepth(940);
+  titleText(scene, W / 2, 250, title, { size, color: CSS.cream, depth: 950 });
+  if (line) text(scene, W / 2, 316, line, { size: 26, color: CSS.turmeric, depth: 950 });
+  button(scene, W / 2, 410, 'Try again', () => scene.scene.restart(), { w: 300, h: 64, size: 30 });
+  button(scene, W / 2, 490, 'Back to the start', () => go(scene, 'Title'), { w: 300, h: 56, size: 24 });
 }

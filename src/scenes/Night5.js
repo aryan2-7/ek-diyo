@@ -5,13 +5,14 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const ROUNDS = [1, 2, 3, 3, 4, 4, 5]; // colours Yamuna shows in each of the seven rounds
 const MAX_MISTAKES = 3; // three slips and Yama arrives
 const TIME_LIMIT = 170; // seconds before Yama reaches the door of the room anyway
 const STEP = 620; // ms between the colours Yamuna points to
+const TAP_RADIUS = 70; // px; piles are ~77 px apart, so a fingertip rarely misses
 const INPUT_DELAY = 380; // ms after the last colour flashes before you can start tapping (the flash itself lasts ~500)
 // ---------------------------------------------------------------------------
 
@@ -98,7 +99,12 @@ export default class Night5 extends Phaser.Scene {
       y: THALI.y + (p.fy - 0.5) * this.thali.displayHeight,
     }));
 
-    this.input.on('pointerdown', (p) => this.onPointer(p));
+    // faint 1-7 labels (same as the keyboard keys) so the colours can be told apart without colour
+    this.piles.forEach((p, i) => {
+      const dark = [0x25305f, 0x8a3070, 0xc8302b, 0x6b8f3a].includes(p.col);
+      text(this, p.x, p.y, String(i + 1), { size: 24, bold: true, color: dark ? '#EFE2C4' : '#1D2540', shadow: false, depth: 312 }).setAlpha(0.55);
+    });
+    this.input.on('pointerdown', canvasOnly((p) => this.onPointer(p)));
     for (let i = 0; i < 7; i++) this.input.keyboard.on(`keydown-${i + 1}`, () => this.tap(i));
 
     this.petals = this.add
@@ -109,6 +115,7 @@ export default class Night5 extends Phaser.Scene {
       .setDepth(830);
 
     this.buildHud();
+    hudButtons(this, { pause: true });
     // how to play: the first round starts only once the player says "Got it"
     instructions(this, { kicker: 'DAY 5  ·  NIGHT 5', title: NIGHTS[5].name, sub: NIGHTS[5].goal }, () => this.startLevel());
   }
@@ -191,7 +198,7 @@ export default class Night5 extends Phaser.Scene {
         best = i;
       }
     });
-    if (bd < 58) this.tap(best);
+    if (bd < TAP_RADIUS) this.tap(best);
   }
 
   tap(i) {
@@ -276,7 +283,6 @@ export default class Night5 extends Phaser.Scene {
       this.t += dt;
       this.updateThreat();
     }
-    if (this.phase === 'intro' && time > 0) this.phase = this.phase; // intro ends via newRound()
     this.flames.update(time);
     this.light.ambient = this.ambientBase + (this.phase === 'won' ? 0 : 0.26 * this.threat);
     this.light.update(time);
@@ -299,7 +305,7 @@ export default class Night5 extends Phaser.Scene {
     const t = titleText(this, W / 2, 190, 'Yama is pleased.', { size: 60, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, duration: 900, delay: 400 });
     this.time.delayedCall(4600, () => {
-      completeNight(5, {});
+      completeNight(5, { mistakes: this.mistakes });
       go(this, 'StoryCard', {
         night: 5,
         card: { ...NIGHTS[5].card, bg: NIGHTS[5].bg },
@@ -319,10 +325,6 @@ export default class Night5 extends Phaser.Scene {
     Sfx.fail();
     this.setStatus('');
     this.tweens.add({ targets: this.yamaState, ...YAMA_STAGES[3], duration: 600, onUpdate: () => this.applyYama() });
-    this.add.rectangle(0, 0, W, H, COLORS.soot, 0.5).setOrigin(0).setDepth(940);
-    titleText(this, W / 2, 250, 'Yama arrived too soon…', { size: 58, color: CSS.cream, depth: 950 });
-    text(this, W / 2, 316, `The tika had ${this.round} of 7 colours. Yamuna will try again.`, { size: 26, color: CSS.turmeric, depth: 950 });
-    button(this, W / 2, 410, 'Try again', () => this.scene.restart(), { w: 300, h: 64, size: 30 });
-    button(this, W / 2, 490, 'Back to the start', () => go(this, 'Title'), { w: 300, h: 56, size: 24 });
+    loseScreen(this, 'Yama arrived too soon…', `The tika had ${this.round} of 7 colours. Yamuna will try again.`, { size: 58 });
   }
 }

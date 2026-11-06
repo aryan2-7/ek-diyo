@@ -39,7 +39,8 @@ export class Keeper {
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.wasd = scene.input.keyboard.addKeys('W,A,S,D');
-    scene.input.on('pointerdown', (p) => {
+    scene.input.on('pointerdown', (p, over) => {
+      if (over && over.length) return; // a tap on a button or HUD icon should not move him
       if (this.enabled) this.target = { x: p.worldX, y: p.worldY };
     });
     scene.input.on('pointermove', (p) => {

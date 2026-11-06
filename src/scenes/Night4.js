@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
 
 // ---- the annakut, the hill of offerings ------------------------------------
 const CX = 644; // the swept cream circle on the courtyard floor is the build spot
@@ -91,12 +91,13 @@ export default class Night4 extends Phaser.Scene {
       .setDepth(830);
 
     this.input.setDefaultCursor('default');
-    this.input.on('pointerdown', () => this.drop());
+    this.input.on('pointerdown', canvasOnly(() => this.drop()));
     this.input.keyboard.on('keydown-SPACE', () => this.drop());
     this.input.keyboard.on('keydown-ENTER', () => this.drop());
 
     this.say = text(this, W / 2, 96, '', { size: 28, color: CSS.cream, depth: 906 });
     this.buildHud();
+    hudButtons(this, { pause: true });
 
     // how to play: the building only starts once the player says "Got it"
     instructions(this, { kicker: 'DAY 4  ·  NIGHT 4', title: NIGHTS[4].name, sub: NIGHTS[4].goal }, () => this.startLevel());
@@ -110,10 +111,30 @@ export default class Night4 extends Phaser.Scene {
     this.time.delayedCall(600, () => this.spawn());
   }
 
+  drawGauge() {
+    const g = this.gaugeG;
+    const x = 22;
+    const w = 164;
+    const y = 84;
+    const f = Phaser.Math.Clamp(Math.abs(this.displayLean) / LEAN_MAX, 0, 1);
+    const col = Phaser.Display.Color.Interpolate.ColorWithColor(
+      Phaser.Display.Color.ValueToColor(COLORS.leaf || 0x5c7a3a),
+      Phaser.Display.Color.ValueToColor(COLORS.vermilion), 100, f * 100,
+    );
+    g.clear();
+    g.fillStyle(COLORS.cream, 0.9).fillRoundedRect(x, y, w, 12, 6);
+    g.fillStyle(Phaser.Display.Color.GetColor(col.r, col.g, col.b), 1);
+    const half = (w / 2) * f;
+    g.fillRect(this.displayLean >= 0 ? x + w / 2 : x + w / 2 - half, y + 1, half, 10);
+    g.fillStyle(COLORS.soot, 0.8).fillRect(x + w / 2 - 1, y - 2, 2, 16);
+  }
+
   // ---------------------------------------------------------------- HUD
   buildHud() {
     const g = this.add.graphics().setDepth(900);
     tornPaper(g, 18, 16, 172, 58, { seed: 21, amp: 2 });
+    // lean gauge: fills out from the middle toward the side the hill leans, green -> vermilion at the limit
+    this.gaugeG = this.add.graphics().setDepth(906);
     this.offerText = text(this, 104, 46, `0 / ${NEED}`, { size: 28, color: CSS.indigo, bold: true, shadow: false, depth: 906 });
     // evening bar
     const bw = 300;
@@ -251,6 +272,7 @@ export default class Night4 extends Phaser.Scene {
       });
     });
     this.lean *= 0.28;
+    Sfx.slide();
     Sfx.fail();
     this.say.setText('Too steep — the top slid off!');
     this.time.delayedCall(820, () => {
@@ -304,11 +326,7 @@ export default class Night4 extends Phaser.Scene {
       this.item = null;
     }
     Sfx.fail();
-    this.add.rectangle(0, 0, W, H, COLORS.soot, 0.45).setOrigin(0).setDepth(940);
-    titleText(this, W / 2, 250, 'The evening ended…', { size: 64, color: CSS.cream, depth: 950 });
-    text(this, W / 2, 316, `${this.landed.length} of ${NEED} offerings were placed. The hill keeps what you built.`, { size: 26, color: CSS.turmeric, depth: 950 });
-    button(this, W / 2, 410, 'Try again', () => this.scene.restart(), { w: 300, h: 64, size: 30 });
-    button(this, W / 2, 490, 'Back to the start', () => go(this, 'Title'), { w: 300, h: 56, size: 24 });
+    loseScreen(this, 'The evening ended…', `${this.landed.length} of ${NEED} offerings were placed. The hill keeps what you built.`);
   }
 
   // ---------------------------------------------------------------- loop
@@ -329,6 +347,7 @@ export default class Night4 extends Phaser.Scene {
 
     // the hill eases toward its lean instead of snapping
     this.displayLean += (this.lean - this.displayLean) * Math.min(1, dt * 6);
+    this.drawGauge();
     this.hill.angle = this.displayLean;
 
     this.drawGuide();

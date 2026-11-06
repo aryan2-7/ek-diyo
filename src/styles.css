@@ -1,3 +1,8 @@
+/* Kalam's Devanagari, subset to the handful of glyphs the game shows (regenerate: tools/subset_fonts.py) */
+@font-face { font-family: Kalam; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('./fonts/kalam-devanagari-400-subset.woff2') format('woff2'); unicode-range: U+0900-097F, U+200C-200D, U+25CC; }
+@font-face { font-family: Kalam; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('./fonts/kalam-devanagari-700-subset.woff2') format('woff2'); unicode-range: U+0900-097F, U+200C-200D, U+25CC; }
 html, body {
   margin: 0;
   height: 100%;

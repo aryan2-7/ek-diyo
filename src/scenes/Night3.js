@@ -6,7 +6,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
 
 const lerp = Phaser.Math.Linear;
 
@@ -25,6 +25,7 @@ function edgeAt(y, i) {
 }
 const leftAt = (y) => edgeAt(y, 1);
 const rightAt = (y) => edgeAt(y, 2);
+const GUST_WARNING = 0.9; // seconds between the whoosh and the lamps dimming
 const REFILL = 1.15; // oil per second while the Keeper stands beside a lamp
 // the four lamps stand on the courtyard floor in a shallow arc, framing the middle archway
 const LAMPS = [
@@ -105,6 +106,7 @@ export default class Night3 extends Phaser.Scene {
       .setDepth(830);
 
     this.buildHud();
+    hudButtons(this, { pause: true });
     // how to play: the night begins only once the player says "Got it" (the lamps wait too)
     this.k.enabled = false;
     instructions(this, { kicker: 'DAY 3  ·  NIGHT 3', title: NIGHTS[3].name, sub: NIGHTS[3].goal }, () => this.startLevel());
@@ -203,9 +205,15 @@ export default class Night3 extends Phaser.Scene {
     if (this.sparks <= 0) this.lose();
   }
 
-  gust() {
+  // a gust announces itself first (whoosh + petals blow in), then dims the lamps a moment later
+  warnGust() {
     Sfx.whoosh();
     this.wind.explode(26, -40, Phaser.Math.Between(420, 620));
+    this.time.delayedCall(GUST_WARNING * 1000, () => this.gust());
+  }
+
+  gust() {
+    if (this.over) return;
     const picks = Phaser.Utils.Array.Shuffle(this.lamps.filter((l) => l.lit)).slice(0, 2);
     // a gust dims two lamps but never blows one out on its own
     picks.forEach((l) => (l.oil = Math.max(Math.min(l.oil, 0.15), l.oil - 0.45)));
@@ -228,13 +236,14 @@ export default class Night3 extends Phaser.Scene {
       const d = Math.hypot(dx, dy);
       if (d < 6) c.pause = Phaser.Math.FloatBetween(2, 4.5);
       else {
-        c.x += (dx / d) * 42 * dt;
-        c.y += (dy / d) * 26 * dt;
+        const calm = this.blessing > 0 ? 0.55 : 1; // during the blessing she ambles
+        c.x += (dx / d) * 42 * calm * dt;
+        c.y += (dy / d) * 26 * calm * dt;
         if (Math.abs(dx) > 4) c.dir = dx > 0 ? 1 : -1;
       }
     }
     const walking = c.eat <= 0 && c.pause <= 0;
-    const bob = walking ? Math.abs(Math.sin(time * 0.006)) * 3 : Math.sin(time * 0.002) * 0.6;
+    const bob = walking ? Math.abs(Math.sin(time * (this.blessing > 0 ? 0.004 : 0.006))) * (this.blessing > 0 ? 6 : 3) : Math.sin(time * 0.002) * 0.6;
     this.cowSpr.setPosition(c.x, c.y - bob).setFlipX(c.dir < 0).setDepth(c.y);
     if (c.eat > 0) this.cowSpr.setAngle(Math.sin(time * 0.012) * 1.8);
     else this.cowSpr.setAngle(0);
@@ -246,6 +255,9 @@ export default class Night3 extends Phaser.Scene {
     if (d < 1 && d > 0.001) {
       k.x = c.x + (ex / d) * 115;
       k.y = c.y - 4 + (ey / d) * 30;
+      // the nudge happens after the Keeper clamped himself: keep him (and his light) inside the courtyard
+      k.y = Phaser.Math.Clamp(k.y, FLOOR.top, FLOOR.bottom);
+      k.x = Phaser.Math.Clamp(k.x, leftAt(k.y), rightAt(k.y));
     }
   }
 
@@ -327,7 +339,7 @@ export default class Night3 extends Phaser.Scene {
 
     if (!this.over) {
       if (this.t >= this.nextGust) {
-        this.gust();
+        this.warnGust();
         this.nextGust = this.t + Phaser.Math.FloatBetween(11, 15);
       }
       if (this.t >= this.nextGarland && !this.carry && !this.items.length) this.spawnGarland();
@@ -373,10 +385,6 @@ export default class Night3 extends Phaser.Scene {
     if (this.over) return;
     this.over = true;
     this.k.enabled = false;
-    this.add.rectangle(0, 0, W, H, COLORS.soot, 0.45).setOrigin(0).setDepth(940);
-    titleText(this, W / 2, 250, 'The lanes went dark…', { size: 60, color: CSS.cream, depth: 950 });
-    text(this, W / 2, 316, 'Laxmi visits only the homes that are lit. Try again?', { size: 26, color: CSS.turmeric, depth: 950 });
-    button(this, W / 2, 410, 'Try again', () => this.scene.restart(), { w: 300, h: 64, size: 30 });
-    button(this, W / 2, 490, 'Back to the start', () => go(this, 'Title'), { w: 300, h: 56, size: 24 });
+    loseScreen(this, 'The lanes went dark…', 'Laxmi visits only the homes that are lit. Try again?', { size: 60 });
   }
 }

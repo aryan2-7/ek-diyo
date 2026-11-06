@@ -34,7 +34,8 @@ export default class Preload extends Phaser.Scene {
     if (night >= 1 && night <= 5) this.scene.start(NIGHTS[night].scene);
     else if (card !== null) {
       const n = parseInt(card, 10);
-      if (n === 0) this.scene.start('StoryCard', { night: 0, card: PROLOGUE, stats: [], next: 'Night1', wicksBefore: 0 });
+      if (Number.isNaN(n) || n < 0 || n > 5) this.scene.start('Title'); // ?card=foo should not crash
+      else if (n === 0) this.scene.start('StoryCard', { night: 0, card: PROLOGUE, stats: [], next: 'Night1', wicksBefore: 0 });
       else
         this.scene.start('StoryCard', {
           night: n,
@@ -43,7 +44,7 @@ export default class Preload extends Phaser.Scene {
           next: NIGHTS[n].next,
           wicksBefore: n,
         });
-    } else if (scene && this.scene.manager.keys[scene]) this.scene.start(scene);
+    } else if (scene && scene !== 'Pause' && this.scene.manager.keys[scene]) this.scene.start(scene);
     else this.scene.start('Title');
   }
 }

@@ -8,6 +8,7 @@ let muted = false;
 let ambientOn = false;
 let bellTimer = null;
 let drone = null;
+let resumeAmbient = false; // ambience was playing when the tab went to the background
 
 const PENTA = [587.33, 659.25, 783.99, 880.0, 987.77, 1174.66]; // D E G A B D
 const SEVEN = [392.0, 440.0, 493.88, 587.33, 659.25, 783.99, 880.0]; // one note per tika colour
@@ -79,6 +80,16 @@ export const Sfx = {
       };
       ['pointerdown', 'keydown', 'touchstart'].forEach((e) => window.addEventListener(e, first, true));
       if (ctx.state === 'running') setTimeout(() => this.startAmbient(), AMBIENT_DELAY); // already unlocked (e.g. returning from another page)
+      // a hidden tab pauses the game loop but not Web Audio: hush the drone and bells until the player is back
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          resumeAmbient = ambientOn;
+          this.stopAmbient();
+        } else if (resumeAmbient && !muted) {
+          resumeAmbient = false;
+          this.startAmbient();
+        }
+      });
     }
   },
   unlock() {
@@ -132,6 +143,7 @@ export const Sfx = {
     tone({ f: 240, to: 130, dur: 0.12, type: 'sawtooth', vol: 0.09 });
     tone({ f: 250, to: 120, dur: 0.12, type: 'sawtooth', vol: 0.09, delay: 0.22 });
   },
+  slide: () => noise({ dur: 0.5, vol: 0.08, freq: 900, q: 0.4 }),
   paper: () => noise({ dur: 0.2, vol: 0.09, freq: 2400, q: 0.4 }),
   whoosh: () => noise({ dur: 0.7, vol: 0.12, freq: 700, q: 0.3 }),
   note: (i) => bell(SEVEN[i % 7], 0.1, 1.1),

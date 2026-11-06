@@ -5,7 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Sfx } from '../systems/sfx.js';
-import { text, titleText, button, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const DURATION = 85; // seconds until dusk is gone
@@ -35,6 +35,7 @@ export default class Night1 extends Phaser.Scene {
     this.t = 0;
     this.over = false;
     this.won = false;
+    this.lost = false;
     this.winAmbient = 0;
     this.plates = [];
     this.crows = [];
@@ -60,6 +61,7 @@ export default class Night1 extends Phaser.Scene {
     this.ringGfx = this.add.graphics().setDepth(820);
 
     this.buildHud();
+    hudButtons(this, { pause: true });
     // how to play: the night begins only once the player says "Got it"
     this.k.enabled = false;
     instructions(this, { kicker: 'DAY 1  ·  NIGHT 1', title: NIGHTS[1].name, sub: NIGHTS[1].goal }, () => this.startLevel());
@@ -188,7 +190,7 @@ export default class Night1 extends Phaser.Scene {
     spr.setScale(base);
     const c = { spr, base, mode: 'fly', seed: Math.random() * 6, p };
     this.crows.push(c);
-    Sfx.flap();
+    if (!this.lost) Sfx.flap();
     this.tweens.addCounter({
       from: 0, to: 1, duration: Phaser.Math.Between(1500, 1900), ease: 'Sine.easeInOut',
       onUpdate: (tw) => {
@@ -215,7 +217,7 @@ export default class Night1 extends Phaser.Scene {
     c.pBase = pw / spr.width;
     spr.setScale(c.pBase * 1.15, c.pBase * 0.85).setPosition(p.perch.x, p.perch.y).setFlipX(spr.flipX);
     this.tweens.add({ targets: spr, scaleX: c.pBase, scaleY: c.pBase, duration: 260, ease: 'Back.easeOut' });
-    Sfx.caw();
+    if (!this.lost) Sfx.caw();
     p.state = 'eating';
     this.fed++;
     const icon = this.hudCrows[this.fed - 1];
@@ -235,7 +237,7 @@ export default class Night1 extends Phaser.Scene {
     spr.setScale(c.base).setY(spr.y - spr.displayHeight * 0.4);
     const goLeft = spr.x < W / 2;
     spr.setFlipX(goLeft);
-    Sfx.flap();
+    if (!this.lost) Sfx.flap();
     this.tweens.add({
       targets: spr, x: goLeft ? -220 : W + 220, y: Phaser.Math.Between(20, 140), duration: 1700, ease: 'Quad.easeIn',
       onUpdate: () => spr.setRotation(goLeft ? 0.25 : -0.25),
@@ -262,7 +264,7 @@ export default class Night1 extends Phaser.Scene {
       if (c.mode === 'fly' || c.mode === 'leave') {
         const f = 0.78 + 0.22 * Math.sin(time * 0.03 + c.seed);
         c.spr.setScale(c.base * (1 + (1 - f) * 0.25), c.base * f);
-        if (time - this.lastFlap > 430) {
+        if (!this.lost && time - this.lastFlap > 430) {
           this.lastFlap = time;
           Sfx.flap();
         }
@@ -283,7 +285,9 @@ export default class Night1 extends Phaser.Scene {
     this.light.update(time);
     this.sun.x = this.barX + this.barW * k;
 
-    if (!this.over && this.t >= DURATION && this.fed < GOAL) this.lose();
+    // if dusk ends while the tenth crow is still flying in, let it land: the goal was already met
+    const inbound = this.crows.filter((c) => c.mode === 'fly').length;
+    if (!this.over && this.t >= DURATION && this.fed < GOAL && this.fed + inbound < GOAL) this.lose();
   }
 
   // ---------------------------------------------------------------- end states
@@ -316,12 +320,9 @@ export default class Night1 extends Phaser.Scene {
 
   lose() {
     this.over = true;
+    this.lost = true;
     this.k.enabled = false;
     Sfx.fail();
-    this.add.rectangle(0, 0, W, H, COLORS.soot, 0.45).setOrigin(0).setDepth(940);
-    titleText(this, W / 2, 250, 'The light faded…', { size: 64, color: CSS.cream, depth: 950 });
-    text(this, W / 2, 316, `${this.fed} of ${GOAL} crows were fed. The rest will wait for tomorrow.`, { size: 26, color: CSS.turmeric, depth: 950 });
-    button(this, W / 2, 410, 'Try again', () => this.scene.restart(), { w: 300, h: 64, size: 30 });
-    button(this, W / 2, 490, 'Back to the start', () => go(this, 'Title'), { w: 300, h: 56, size: 24 });
+    loseScreen(this, 'The light faded…', `${this.fed} of ${GOAL} crows were fed. The rest will wait for tomorrow.`);
   }
 }
