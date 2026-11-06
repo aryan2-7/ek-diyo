@@ -16,6 +16,21 @@ import Night5 from './scenes/Night5.js';
 import Ending from './scenes/Ending.js';
 import Pause from './scenes/Pause.js';
 
+// No right-click menu, and right/middle clicks never reach the game (they used to fire drops, jumps and button presses).
+// Capture phase on window, so this runs before Phaser or any page element sees the event.
+['contextmenu', 'auxclick', 'mousedown', 'mouseup', 'pointerdown', 'pointerup'].forEach((type) =>
+  window.addEventListener(
+    type,
+    (e) => {
+      if (type === 'contextmenu' || e.button !== 0) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    { capture: true },
+  ),
+);
+
 const config = {
   type: Phaser.AUTO,
   parent: 'game',
@@ -24,6 +39,7 @@ const config = {
   backgroundColor: '#1A1714',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   input: { activePointers: 2 },
+  disableContextMenu: true,
   render: { antialias: true, powerPreference: 'high-performance' },
   scene: [Preload, Title, StoryCard, Night1, Night2, Night3, Night4, Night5, Ending, Pause],
 };

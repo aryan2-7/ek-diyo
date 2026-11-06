@@ -113,7 +113,7 @@ export default class Night2 extends Phaser.Scene {
     this.input.on('pointerup', release);
 
     this.buildHud();
-    hudButtons(this, { pause: true });
+    hudButtons(this, { pause: true, x: W - 136 }); // the centre is taken by the progress bar
     // how to play: the run starts only once the player says "Got it"
     instructions(this, { kicker: 'DAY 2  ·  NIGHT 2', title: NIGHTS[2].name, sub: NIGHTS[2].goal }, () => this.startIntro());
   }

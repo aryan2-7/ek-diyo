@@ -82,7 +82,8 @@ export default class StoryCard extends Phaser.Scene {
     };
     this.btn = button(this, 1050, 612, night === 0 ? 'Light the first night' : 'Continue', proceed, { w: 320, h: 64, size: 28 });
     this.btn.setAlpha(0);
-    this.tweens.add({ targets: this.btn, alpha: 1, duration: 500, delay: 2300 });
+    this.btn.input.enabled = false; // an invisible button must not be clickable
+    this.tweens.add({ targets: this.btn, alpha: 1, duration: 500, delay: 2300, onComplete: () => (this.btn.input.enabled = true) });
     this.input.keyboard.on('keydown-SPACE', proceed);
     this.input.keyboard.on('keydown-ENTER', proceed);
   }

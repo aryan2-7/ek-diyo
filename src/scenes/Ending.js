@@ -37,7 +37,8 @@ export default class Ending extends Phaser.Scene {
 
     const b = button(this, W - 190, H - 52, 'Play again', () => go(this, 'Title'), { w: 280, h: 60, size: 26 });
     b.setAlpha(0);
-    this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: 1800 });
+    b.input.enabled = false;
+    this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: 1800, onComplete: () => (b.input.enabled = true) });
     let ready = false;
     this.time.delayedCall(1800, () => (ready = true));
     const again = () => ready && go(this, 'Title');

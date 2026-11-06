@@ -128,13 +128,13 @@ export function instructions(scene, info, onGo, { delay = 450 } = {}) {
     scene.time.delayedCall(450, onGo);
     return;
   }
-  seenTutorial.add(info.kicker);
   const panel = banner(scene, info, { keep: true });
   let btn = null;
   let done = false;
   const dismiss = () => {
     if (done) return;
     done = true;
+    seenTutorial.add(info.kicker); // only counts once the player actually started the night
     KEYS.forEach((k) => scene.input.keyboard.off(k, dismiss));
     btn?.destroy();
     scene.tweens.add({ targets: panel, alpha: 0, y: 225, duration: 500, onComplete: () => panel.destroy() });
@@ -222,8 +222,13 @@ export function hudButtons(scene, { pause = false, x = W / 2 - 34, y = 44 } = {}
       drawSpeaker(sound.icon);
     }
   };
+  // UPDATE does not run while the scene is paused, so also refresh on RESUME (sound can be toggled in the pause menu)
   scene.events.on(Phaser.Scenes.Events.UPDATE, refresh);
-  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.UPDATE, refresh));
+  scene.events.on(Phaser.Scenes.Events.RESUME, refresh);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+    scene.events.off(Phaser.Scenes.Events.UPDATE, refresh);
+    scene.events.off(Phaser.Scenes.Events.RESUME, refresh);
+  });
 
   if (pause) {
     make(x + 68, (icon) => {
