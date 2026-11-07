@@ -25,7 +25,7 @@ export function finish(scene, { petals = true, motes = true } = {}) {
       const cm = cam.postFX.addColorMatrix();
       cm.saturate(0.12);
       cm.contrast(0.06);
-      if (scene.sys.game.device.os.desktop) cam.postFX.addBloom(0xffffff, 1, 1, 1.1, 0.55, 4);
+      if (scene.sys.game.device.os.desktop) cam.postFX.addBloom(0xffffff, 1, 1, 0.6, 0.11, 4);
     } catch {
       /* effects are a bonus, never a blocker */
     }

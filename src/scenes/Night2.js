@@ -341,14 +341,15 @@ export default class Night2 extends Phaser.Scene {
     if (this.phase === 'done') return;
     if (!this.onGround) {
       this.dog.setTexture('dog_jump');
-      this.dog.setRotation(Phaser.Math.Clamp(this.vy / 3200, -0.34, 0.28));
+      this.dog.setRotation(Phaser.Math.Clamp(this.vy / 2200, -0.5, 0.42));
     } else {
       this.gallop += dt * (4 + this.speed / 60);
-      const frame = this.speed > 30 ? Math.floor(this.gallop) % 2 : 0;
-      this.dog.setTexture(frame ? 'dog_jump' : 'dog_run');
-      this.dog.setRotation(this.speed > 30 ? Math.sin(this.gallop * Math.PI) * 0.03 : 0);
+      // 8-frame gallop cycle (tools/make_dog_frames.py); `gallop` counts half-strides, so 2 frames per unit
+      const running = this.speed > 30;
+      this.dog.setTexture(running ? 'dog_run_' + (Math.floor(this.gallop * 2) % 8) : 'dog_run');
+      this.dog.setRotation(0);
     }
-    const bob = this.onGround && this.speed > 30 ? Math.abs(Math.sin(Math.floor(this.gallop * 4) / 4 * Math.PI)) * -6 : 0;
+    const bob = this.onGround && this.speed > 30 ? (0.5 + 0.5 * Math.cos(Math.floor(this.gallop * 2) % 8 * Math.PI / 4)) * -7 : 0;
     this.dog.setPosition(DOG_X, this.dogY + bob);
     const h = (GROUND - this.dogY) / 200;
     this.shadow.setPosition(DOG_X - 6, GROUND + 4).setScale(1 - Math.min(0.5, h * 0.4), 1).setAlpha(0.35 - Math.min(0.2, h * 0.2));
