@@ -6,6 +6,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
+import { finish, snap, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
 
 const lerp = Phaser.Math.Linear;
@@ -65,6 +66,7 @@ export default class Night3 extends Phaser.Scene {
     coverBg(this, 'bg_n3', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: 0.4 });
+    finish(this);
     paperGrain(this, 0.12);
 
     // lamps on the courtyard floor, each slowly burning down
@@ -243,10 +245,11 @@ export default class Night3 extends Phaser.Scene {
       }
     }
     const walking = c.eat <= 0 && c.pause <= 0;
-    const bob = walking ? Math.abs(Math.sin(time * (this.blessing > 0 ? 0.004 : 0.006))) * (this.blessing > 0 ? 6 : 3) : Math.sin(time * 0.002) * 0.6;
+    const ts = snap(time, 8);
+    const bob = walking ? Math.abs(Math.sin(ts * (this.blessing > 0 ? 0.004 : 0.006))) * (this.blessing > 0 ? 6 : 3) : Math.sin(time * 0.002) * 0.6;
     this.cowSpr.setPosition(c.x, c.y - bob).setFlipX(c.dir < 0).setDepth(c.y);
     if (c.eat > 0) this.cowSpr.setAngle(Math.sin(time * 0.012) * 1.8);
-    else this.cowSpr.setAngle(0);
+    else this.cowSpr.setAngle(walking ? stepNoise(time, 3, 8) * 1.1 : 0);
     // the cow is solid: nudge the Keeper around her
     const k = this.k;
     const ex = (k.x - c.x) / 115;

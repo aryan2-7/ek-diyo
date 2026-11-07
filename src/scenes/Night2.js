@@ -5,6 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
+import { finish } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
@@ -70,6 +71,7 @@ export default class Night2 extends Phaser.Scene {
     this.bgB = this.add.image(this.bgW, 0, 'bg_n2').setOrigin(0).setScale(sc).setDepth(0);
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambBase });
+    finish(this);
     paperGrain(this, 0.12);
 
     // the Keeper stays behind on the street
@@ -346,7 +348,7 @@ export default class Night2 extends Phaser.Scene {
       this.dog.setTexture(frame ? 'dog_jump' : 'dog_run');
       this.dog.setRotation(this.speed > 30 ? Math.sin(this.gallop * Math.PI) * 0.03 : 0);
     }
-    const bob = this.onGround && this.speed > 30 ? Math.abs(Math.sin(this.gallop * Math.PI)) * -6 : 0;
+    const bob = this.onGround && this.speed > 30 ? Math.abs(Math.sin(Math.floor(this.gallop * 4) / 4 * Math.PI)) * -6 : 0;
     this.dog.setPosition(DOG_X, this.dogY + bob);
     const h = (GROUND - this.dogY) / 200;
     this.shadow.setPosition(DOG_X - 6, GROUND + 4).setScale(1 - Math.min(0.5, h * 0.4), 1).setAlpha(0.35 - Math.min(0.2, h * 0.2));

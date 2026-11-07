@@ -5,6 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
+import { finish, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
@@ -66,6 +67,7 @@ export default class Night5 extends Phaser.Scene {
     coverBg(this, 'bg_n5', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambientBase });
+    finish(this);
     paperGrain(this, 0.1);
 
     // the Keeper, brother, holding the five-wick diya
@@ -284,6 +286,8 @@ export default class Night5 extends Phaser.Scene {
       this.updateThreat();
     }
     this.flames.update(time);
+    this.yamuna.setAngle(stepNoise(time, 5, 6) * 0.9);
+    this.yama.setAngle(stepNoise(time, 9, 6) * 0.7);
     this.light.ambient = this.ambientBase + (this.phase === 'won' ? 0 : 0.26 * this.threat);
     this.light.update(time);
   }

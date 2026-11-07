@@ -5,6 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Sfx } from '../systems/sfx.js';
+import { finish, snap, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
@@ -49,6 +50,7 @@ export default class Night1 extends Phaser.Scene {
     coverBg(this, 'bg_n1', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: 0.04 });
+    finish(this);
     paperGrain(this, 0.12);
 
     // ---- the Keeper (carries one wick tonight)
@@ -262,8 +264,9 @@ export default class Night1 extends Phaser.Scene {
   updateCrows(time) {
     for (const c of this.crows) {
       if (c.mode === 'fly' || c.mode === 'leave') {
-        const f = 0.78 + 0.22 * Math.sin(time * 0.03 + c.seed);
+        const f = 0.78 + 0.22 * Math.sin(snap(time, 12) * 0.0151 + c.seed); // 5-step wingbeat, stop-motion
         c.spr.setScale(c.base * (1 + (1 - f) * 0.25), c.base * f);
+        c.spr.rotation += stepNoise(time, c.seed, 12) * 0.035;
         if (!this.lost && time - this.lastFlap > 430) {
           this.lastFlap = time;
           Sfx.flap();

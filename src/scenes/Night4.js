@@ -5,6 +5,7 @@ import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
+import { finish } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
 
 // ---- the annakut, the hill of offerings ------------------------------------
@@ -75,6 +76,7 @@ export default class Night4 extends Phaser.Scene {
     coverBg(this, 'bg_n4', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambient });
+    finish(this, { petals: false });
     this.hillLight = this.light.add({ x: CX, y: BASE_Y - 150, radius: 200, flicker: 0.03 });
     paperGrain(this, 0.12);
 

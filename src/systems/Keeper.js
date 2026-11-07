@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { FlameCluster } from './Flame.js';
+import { snap, stepNoise } from './Motion.js';
 
 const lerp = Phaser.Math.Linear;
 // where the diya sits on each Keeper sprite (fractions of displayed width / height)
@@ -105,8 +106,10 @@ export class Keeper {
     const sc = lerp(this.scale[0], this.scale[1], this.depthT(this.y));
     spr.setTexture(this.face === 'side' ? 'keeper_side' : 'keeper');
     const idleSq = 0.012 * Math.sin(time * 0.003);
-    const walkSq = this.moving ? Math.abs(Math.sin(time * 0.012)) * 0.035 : 0;
-    const hop = this.moving ? Math.abs(Math.sin(time * 0.012)) * 7 : 0;
+    const ts = snap(time, 12);
+    const walkSq = this.moving ? Math.abs(Math.sin(ts * 0.0094)) * 0.035 : 0;
+    const hop = this.moving ? Math.abs(Math.sin(ts * 0.0094)) * 7 : 0;
+    spr.setRotation(this.moving ? stepNoise(time, 1, 12) * 0.035 : 0);
     spr.setScale(sc * (1 - idleSq - walkSq), sc * (1 + idleSq + walkSq));
     spr.setFlipX(this.face === 'side' && this.dir < 0);
     spr.setPosition(this.x, this.y - hop).setDepth(this.y);
