@@ -9,8 +9,43 @@ import { finish } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
+/** Bakes a sticker-style outline (cream inner, soot outer) around a sprite so it reads on any background. */
+function outlined(scene, src, key, inner = 8, outer = 6) {
+  const pad = inner + outer + 2;
+  if (!scene.textures.exists(key)) {
+    const img = scene.textures.get(src).getSourceImage();
+    const w = img.width + pad * 2;
+    const h = img.height + pad * 2;
+    const silhouette = (color, r) => {
+      const s = document.createElement('canvas');
+      s.width = img.width;
+      s.height = img.height;
+      const sx = s.getContext('2d');
+      sx.drawImage(img, 0, 0);
+      sx.globalCompositeOperation = 'source-in';
+      sx.fillStyle = color;
+      sx.fillRect(0, 0, s.width, s.height);
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const cx = c.getContext('2d');
+      for (let a = 0; a < 20; a++) cx.drawImage(s, pad + Math.cos((a / 20) * Math.PI * 2) * r, pad + Math.sin((a / 20) * Math.PI * 2) * r);
+      return c;
+    };
+    const tex = scene.textures.createCanvas(key, w, h);
+    const ctx = tex.getContext();
+    ctx.drawImage(silhouette(CSS.soot, inner + outer), 0, 0);
+    ctx.drawImage(silhouette(CSS.cream, inner), 0, 0);
+    ctx.drawImage(img, pad, pad);
+    tex.refresh();
+  }
+  return pad;
+}
+
 const GROUND = 655; // y of the street the dog runs on
 const DOG_X = 330;
+const RUN_TILT = 0.052; // ~3 degrees nose-down: puts the hind and front paws on one level
+const JUMP_TILT = -0.14; // ~8 degrees nose-up at the top of a leap
 const GRAVITY = 2400;
 const JUMP_V = -1200; // the original big, floaty leap: about 300 px high when you hold the button
 const SPEED = 430; // one steady pace: the challenge is reading the road, not outgrowing it
@@ -54,6 +89,8 @@ export default class Night2 extends Phaser.Scene {
     this.onGround = true;
     this.jumpBuffer = 0;
     this.gallop = 0;
+    this.dogRot = RUN_TILT;
+    this.landUntil = 0;
     this.ambBase = 0.2; // keep the scene clearly visible: only a slight night tint (no lamp lights here)
     this.t = 0;
   }
@@ -69,6 +106,10 @@ export default class Night2 extends Phaser.Scene {
     this.bgA.setScale(sc);
     this.bgW = this.bgA.displayWidth;
     this.bgB = this.add.image(this.bgW, 0, 'bg_n2').setOrigin(0).setScale(sc).setDepth(0);
+    // calm the (very orange) street a little so the garlands, the one thing to chase, stand out
+    this.bgA.setTint(0xc9c5d6);
+    this.bgB.setTint(0xc9c5d6);
+    this.malaPad = outlined(this, 'marigold_mala', 'mala_outlined');
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambBase });
     finish(this);
@@ -85,10 +126,13 @@ export default class Night2 extends Phaser.Scene {
       y: this.keeper.y - this.keeper.displayHeight * 0.5,
     };
     this.rig.setPosition(this.handPos.x, this.handPos.y);
+    // its light: lifts the dusk around the flames and grows as the run goes on
+    this.diyaLight = this.light.add({ x: this.handPos.x, y: this.handPos.y, radius: 0, flicker: 0.06 });
+    this.diyaGlow = this.add.image(this.handPos.x, this.handPos.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd08a).setDepth(759).setAlpha(0);
 
     // dog
     this.shadow = this.add.ellipse(DOG_X, GROUND + 4, 170, 18, COLORS.soot, 0.35).setDepth(GROUND - 1);
-    this.dog = this.add.image(DOG_X, GROUND, 'dog_run').setOrigin(0.5, 1).setDepth(GROUND + 10);
+    this.dog = this.add.image(DOG_X, GROUND, 'dog_jump').setOrigin(0.5, 1).setDepth(GROUND + 10);
     this.dogScale = 218 / this.dog.width;
     this.dog.setScale(this.dogScale);
     // a fair hitbox derived from the art: body only of the running pose (no tail, no ear tips)
@@ -159,7 +203,7 @@ export default class Night2 extends Phaser.Scene {
     g.fillStyle(COLORS.indigo, 0.35).fillRect(this.trackX, 43, this.trackW, 6);
     g.fillStyle(COLORS.marigold, 1).fillRect(this.trackX, 43, 4, 6);
     this.gateIcon = this.add.image(this.trackX + this.trackW + 4, 56, 'gate').setOrigin(0.5, 1).setDepth(905).setScale(0.1);
-    this.dogIcon = this.add.image(this.trackX, 50, 'dog_run').setOrigin(0.5, 1).setDepth(906).setScale(0.07);
+    this.dogIcon = this.add.image(this.trackX, 50, 'dog_jump').setOrigin(0.5, 1).setDepth(906).setScale(0.07);
   }
 
   // ---------------------------------------------------------------- jump
@@ -231,8 +275,8 @@ export default class Night2 extends Phaser.Scene {
     // glow + shadow so the garland reads against the marigold-heavy street
     const shadow = this.add.ellipse(x, y + 6, 120, 42, COLORS.soot, 0.45).setDepth(GROUND + 7);
     const glow = this.add.image(x, y - 16, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(1.5).setAlpha(0.95).setDepth(GROUND + 7);
-    const spr = this.add.image(x, y, 'marigold_mala').setDepth(GROUND + 8);
-    spr.setScale(142 / spr.width);
+    const spr = this.add.image(x, y, 'mala_outlined').setDepth(GROUND + 8);
+    spr.setScale(156 / (spr.width - this.malaPad * 2));
     this.gar.push({ spr, glow, shadow, x, y, taken: false, bob: Math.random() * 6 });
     this.garlandsSeen++;
   }
@@ -276,6 +320,12 @@ export default class Night2 extends Phaser.Scene {
 
     // light & darkness
     this.light.ambient = this.ambBase;
+    const kRun = Math.min(1, this.dist / TRACK);
+    const lp = this.rig.lightPoint();
+    this.diyaLight.x = lp.x;
+    this.diyaLight.y = lp.y;
+    this.diyaLight.radius = 140 + 200 * kRun; // the diya brightens the longer the run goes
+    this.diyaGlow.setPosition(lp.x, lp.y).setScale(1.7 + 2.3 * kRun).setAlpha(0.3 + 0.45 * kRun);
     this.light.update(time);
 
     // HUD
@@ -332,24 +382,34 @@ export default class Night2 extends Phaser.Scene {
         this.onGround = true;
         Sfx.land();
         this.dust.explode(6, DOG_X - 30, GROUND);
+        this.landUntil = time + 200;
         this.dog.setScale(this.dogScale * 1.08, this.dogScale * 0.88);
         this.tweens.add({ targets: this.dog, scaleX: this.dogScale, scaleY: this.dogScale, duration: 180, ease: 'Back.easeOut' });
       }
     }
 
-    // pose
+    // pose: one image (dog_jump) for everything; only its angle and a smooth stride bob change
     if (this.phase === 'done') return;
+    let tilt = RUN_TILT; // running: nose slightly down so both pairs of legs sit level
+    let bob = 0;
     if (!this.onGround) {
+      // nose-up on the way up, easing level and a touch down on the way back
+      tilt = JUMP_TILT + Phaser.Math.Clamp(this.vy / 5000, -0.1, 0.22);
       this.dog.setTexture('dog_jump');
-      this.dog.setRotation(Phaser.Math.Clamp(this.vy / 2200, -0.5, 0.42));
     } else {
       this.gallop += dt * (4 + this.speed / 60);
-      // 8-frame gallop cycle (tools/make_dog_frames.py); `gallop` counts half-strides, so 2 frames per unit
       const running = this.speed > 30;
-      this.dog.setTexture(running ? 'dog_run_' + (Math.floor(this.gallop * 2) % 8) : 'dog_run');
-      this.dog.setRotation(0);
+      // 8-frame gallop (tools/make_dog_stride.py): 4 gallop units = one stride, 2 frames per unit
+      this.dog.setTexture(running ? 'dog_stride_' + (Math.floor(this.gallop * 2) % 8) : 'dog_jump');
+      if (running) {
+        const th = (this.gallop * Math.PI) / 2; // one full stride = 4 gallop units
+        bob = (0.5 + 0.5 * Math.cos(th)) * -4; // the frames carry most of the dip themselves
+        tilt += 0.022 * Math.sin(th); // nose lifts as the body rises, dips as it lands
+        if (time > this.landUntil) this.dog.setScale(this.dogScale * (1 + 0.012 * Math.cos(th)), this.dogScale * (1 - 0.012 * Math.cos(th)));
+      }
     }
-    const bob = this.onGround && this.speed > 30 ? (0.5 + 0.5 * Math.cos(Math.floor(this.gallop * 2) % 8 * Math.PI / 4)) * -7 : 0;
+    this.dogRot += (tilt - this.dogRot) * (1 - Math.exp(-dt * 16)); // glide between poses
+    this.dog.setRotation(this.dogRot);
     this.dog.setPosition(DOG_X, this.dogY + bob);
     const h = (GROUND - this.dogY) / 200;
     this.shadow.setPosition(DOG_X - 6, GROUND + 4).setScale(1 - Math.min(0.5, h * 0.4), 1).setAlpha(0.35 - Math.min(0.2, h * 0.2));

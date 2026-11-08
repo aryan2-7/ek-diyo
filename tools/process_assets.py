@@ -42,7 +42,6 @@ MANIFEST = {
     "thali_grain": ("sprite", 380),
     # night 2
     "bg_n2": ("bg_loop", 810),
-    "dog_run": ("sprite", 640),
     "dog_jump": ("sprite", 640),
     "dog_tika": ("sprite", 620),
     "obstacle_pots": ("sprite", 480),

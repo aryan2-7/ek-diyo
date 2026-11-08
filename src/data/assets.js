@@ -6,7 +6,7 @@ export const ASSETS = [
   // night 1
   'bg_n1', 'crow_perched', 'crow_fly', 'thali_grain',
   // night 2
-  'bg_n2', 'dog_run', 'dog_jump', ...Array.from({ length: 8 }, (_, i) => `dog_run_${i}`), 'dog_tika', 'obstacle_pots', 'obstacle_baskets',
+  'bg_n2', 'dog_jump', ...Array.from({ length: 8 }, (_, i) => `dog_stride_${i}`), 'dog_tika', 'obstacle_pots', 'obstacle_baskets',
   // night 3
   'bg_n3', 'cow', 'cow_mala', 'house_a', 'house_b',
   // night 4
