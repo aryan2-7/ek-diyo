@@ -317,9 +317,10 @@ export default class Night2 extends Phaser.Scene {
     const x0 = W + 150;
     // one last really hard jump: a tall pot right before the wave of garlands
     const def = OBSTACLES.pots;
-    const spr = this.add.image(x0 - 120, GROUND + 6, def.key).setOrigin(0.5, 1).setDepth(GROUND + 5);
+    const ox = x0 + 240;
+    const spr = this.add.image(ox, GROUND + 6, def.key).setOrigin(0.5, 1).setDepth(GROUND + 5);
     spr.setScale(def.h / spr.height);
-    this.obs.push({ spr, def, x: x0 - 120 });
+    this.obs.push({ spr, def, x: ox });
     for (let i = 0; i < n; i++) this.addGarland(x0 + i * 170, GROUND - 120 - Math.sin((n > 1 ? i / (n - 1) : 0.5) * Math.PI) * 170);
     this.finale = true;
     this.nextSpawn = Infinity;
@@ -380,7 +381,7 @@ export default class Night2 extends Phaser.Scene {
     }
 
     if (this.autoPlay && (this.phase === 'run' || this.phase === 'gate') && this.onGround) {
-      const threshold = this.fastPlay ? 420 : 300;
+      const threshold = this.fastPlay ? 520 : 460;
       for (const o of this.obs) {
         const dx = o.x - DOG_X;
         if (dx > 0 && dx < threshold) { this.pressJump(); break; }

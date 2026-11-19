@@ -148,7 +148,7 @@ export default class StoryCard extends Phaser.Scene {
           Sfx.setLevel(NIGHT_LEVEL[night + 1] ?? 5);
         }
         this.tweens.add({ targets: this.caption, alpha: 1, duration: 600 });
-        this.time.delayedCall(900, () => go(this, next));
+        this.time.delayedCall(2000, () => go(this, next));
         return;
       }
       go(this, next);

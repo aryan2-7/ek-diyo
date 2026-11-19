@@ -77,9 +77,10 @@ export default class Ending extends Phaser.Scene {
       make(452, 'Greeting card', () => openGreeting(this)),
       make(524, 'Play again', () => go(this, 'Title')),
     ];
-    const credits = text(this, 1110, 590, 'credits', { size: 22, color: CSS.cream, depth: 20 }).setAlpha(0).setInteractive({ useHandCursor: true });
-    this.tweens.add({ targets: credits, alpha: 0.8, duration: 600, delay: at });
-    credits.on('pointerup', () => this.open('Credits'));
+    const credits = button(this, 1110, 590, 'credits', () => this.open('Credits'), { w: 220, h: 46, size: 22, depth: 20 });
+    credits.setAlpha(0).setVisible(false);
+    credits.input.enabled = false;
+    this.tweens.add({ targets: credits, alpha: 0.8, duration: 600, delay: at, onStart: () => credits.setVisible(true), onComplete: () => (credits.input.enabled = true) });
     focusMenu(this, btns, { start: 2, readyAt: at + 600 });
   }
 

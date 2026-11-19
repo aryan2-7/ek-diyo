@@ -334,13 +334,9 @@ export default class Night5 extends Phaser.Scene {
     item.on('drag', (p, x, y) => { item.setPosition(x, y); this.taskGlow?.setPosition(x, y); });
     item.on('dragend', () => {
       if (this.phase !== 'task') return;
-      const zz = this.zone(kind);
-      if (Math.hypot(item.x - zz.x, (item.y - zz.y) * 1.1) < zz.r) this.taskDone(kind);
-      else {
-        this.tweens.add({ targets: item, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
-        this.tweens.add({ targets: this.taskGlow, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
-      }
+      this.taskDone(kind);
     });
+    item.on('pointerdown', () => { if (this.phase === 'task') this.taskDone(kind); });
     Sfx.chime();
     this.time.delayedCall(9000, () => this.phase === 'task' && this.setStatus('…or press Space'));
   }
