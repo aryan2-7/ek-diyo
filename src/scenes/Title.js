@@ -107,7 +107,8 @@ export default class Title extends Phaser.Scene {
       this.gateUp = false;
       entered = true;
       this.lockUntil = this.time.now + 450;
-      this.input.keyboard.off('keydown', done);
+      this.input.keyboard.off('keydown-ENTER', done);
+      this.input.keyboard.off('keydown-SPACE', done);
       Sfx.unlock();
       Sfx.startAmbient();
       if (settings.fullscreen && this.scale.fullscreen.available && !this.scale.isFullscreen) {
@@ -121,7 +122,8 @@ export default class Title extends Phaser.Scene {
         onComplete: () => { veil.destroy(); g.destroy(); title.destroy(); info.destroy(); btn.destroy(); },
       });
     };
-    this.input.keyboard.on('keydown', done);
+    this.input.keyboard.on('keydown-ENTER', done);
+    this.input.keyboard.on('keydown-SPACE', done);
   }
 
   buildNights() {
