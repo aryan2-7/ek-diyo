@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, CSS } from '../config.js';
-import { NIGHTS } from '../data/nights.js';
+import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
+import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
@@ -9,9 +10,10 @@ import { finish, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-const ROUNDS = [1, 2, 3, 3, 4, 4, 5]; // colours Yamuna shows in each of the seven rounds
+const ROUNDS = [1, 2, 3, 4, 5, 6]; // colours Yamuna shows in each of the six rounds: every round lays one blossom of the tika
 const MAX_MISTAKES = 3; // three slips and Yama arrives
-const TIME_LIMIT = 170; // seconds before Yama reaches the door of the room anyway
+const TIME_LIMIT = 120; // seconds before Yama reaches the door of the room anyway
+const TASK_BONUS = 14; // seconds Yama is pushed back each time a ritual task is done
 const STEP = 620; // ms between the colours Yamuna points to
 const TAP_RADIUS = 70; // px; piles are ~77 px apart, so a fingertip rarely misses
 const INPUT_DELAY = 380; // ms after the last colour flashes before you can start tapping (the flash itself lasts ~500)
@@ -28,7 +30,27 @@ const PILES = [
   { name: 'white', col: 0xf0e8d8, fx: 200 / 560, fy: 210 / 372 },
 ];
 // the tika on his forehead, one stripe per round
-const STRIPES = [0xc8302b, 0xf08a20, 0xf0c830, 0x6b8f3a, 0x25305f, 0x8a3070, 0xf0e8d8];
+// The tika as it really looks: a yellow bar down the forehead with six blossoms of colour, top to bottom.
+const TIKA = [0xd3232b, 0x6a35b8, 0xd62a73, 0x5fa22e, 0xc9201f, 0xf5f3ee]; // red, purple, pink, green, red, white
+
+/** A fluffy blossom of powder (a darker body, petals and a highlight), like the ones in a real tika. */
+function blossom(g, x, y, r, color, k = 1) {
+  const c = Phaser.Display.Color.IntegerToColor(color);
+  const shade = (f) => Phaser.Display.Color.GetColor(Math.min(255, c.red * f), Math.min(255, c.green * f), Math.min(255, c.blue * f));
+  g.fillStyle(shade(0.62), 1).fillCircle(x, y + r * 0.08 * k, r * k);
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + 0.4;
+    g.fillStyle(i % 2 ? shade(1) : shade(1.12), 1).fillCircle(x + Math.cos(a) * r * 0.5 * k, y + Math.sin(a) * r * 0.5 * k, r * 0.52 * k);
+  }
+  g.fillStyle(shade(1.22), 1).fillCircle(x - r * 0.15 * k, y - r * 0.15 * k, r * 0.3 * k);
+}
+
+/** The yellow bar the blossoms sit on. */
+function tikaBar(g, cx, top, w, h) {
+  g.fillStyle(0xcfae22, 1).fillRoundedRect(cx - w / 2 - 1.5, top + 2, w + 3, h, w * 0.25);
+  g.fillStyle(0xf6e24a, 1).fillRoundedRect(cx - w / 2, top, w, h, w * 0.22);
+  g.fillStyle(0xfff59a, 0.85).fillRoundedRect(cx - w * 0.3, top + 3, w * 0.2, Math.max(2, h - 6), w * 0.1);
+}
 
 const THALI = { x: 640, y: 584, w: 430 };
 const KEEPER = { x: 318, y: 724, h: 520 };
@@ -58,12 +80,19 @@ export default class Night5 extends Phaser.Scene {
     this.threat = 0;
     this.stage = 1; // Yama is already at the door from the start
     this.ambientBase = 0.34;
+    this.slips = 0; // every wrong colour counted (the dry fruits forgive one, but the record keeps it)
+    this.tasks = { garland: false, fruit: false };
+    this.taskKind = null;
+    this.tikaP = 0;
+    this.tikaShown = 0;
+    this.tikaDone = false;
   }
 
   create() {
     fadeIn(this);
     this.cameras.main.setBackgroundColor(CSS.soot);
     globalKeys(this);
+    Sfx.setLevel(NIGHT_LEVEL[5]);
     coverBg(this, 'bg_n5', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambientBase });
@@ -77,9 +106,19 @@ export default class Night5 extends Phaser.Scene {
     const kdw = this.keeper.displayWidth;
     const kdh = this.keeper.displayHeight;
     this.flames.setPosition(KEEPER.x + (0.47 - 0.5) * kdw, KEEPER.y - kdh * (1 - 0.405));
-    this.kLight = this.light.add({ x: this.flames.x, y: this.flames.y - 40, radius: 400, flicker: 0.05 });
-    this.add.image(this.flames.x, this.flames.y - 30, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.4).setAlpha(0.45).setDepth(759);
+    this.kLight = this.light.add({ x: this.flames.x, y: this.flames.y - 40, radius: 330, flicker: 0.05 });
+    // a soft warm shadow behind the five flames: on the pale shawl they used to disappear
+    this.add.image(this.flames.x, this.flames.y + 6, 'light').setTint(0x3a1a08).setAlpha(0.38).setScale(0.42, 0.52).setDepth(757);
+    this.add.image(this.flames.x, this.flames.y - 30, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.4).setAlpha(0.5).setDepth(759);
     this.stripes = this.add.graphics().setDepth(210);
+    // the ritual: a garland for the brother, dry fruits for Yama (placeholders until finished art exists)
+    this.makeMala();
+    this.garland = this.add.image(0, 0, 'mala_u').setOrigin(0.5, 0).setDepth(330).setAlpha(0);
+    this.garland.setScale(140 / this.garland.width);
+    this.plate = this.add.image(0, 0, 'dry_fruit_plate').setDepth(330).setAlpha(0);
+    this.plate.setScale(150 / this.plate.width);
+    // Yama's shadow creeps across the floor toward the thali as the danger grows
+    this.yShadow = this.add.image(1100, 712, 'light').setTint(0x000000).setOrigin(1, 0.5).setDepth(150).setAlpha(0.16);
 
     // Yamuna
     this.yamuna = this.add.image(YAMUNA.x, YAMUNA.y, 'yamuna').setOrigin(0.5, 1).setDepth(200);
@@ -107,7 +146,13 @@ export default class Night5 extends Phaser.Scene {
       text(this, p.x, p.y, String(i + 1), { size: 24, bold: true, color: dark ? '#EFE2C4' : '#1D2540', shadow: false, depth: 312 }).setAlpha(0.55);
     });
     this.input.on('pointerdown', canvasOnly((p) => this.onPointer(p)));
-    for (let i = 0; i < 7; i++) this.input.keyboard.on(`keydown-${i + 1}`, () => this.tap(i));
+    // the numbered powders work from the keyboard too: 1-7 on the number row or the keypad (Phaser names the keys ONE, TWO...)
+    ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'].forEach((name, i) => {
+      this.input.keyboard.on(`keydown-${name}`, () => this.tap(i));
+      this.input.keyboard.on(`keydown-NUMPAD_${name}`, () => this.tap(i));
+    });
+    ['keydown-SPACE', 'keydown-ENTER'].forEach((k) => this.input.keyboard.on(k, () => this.phase === 'task' && this.taskDone(this.taskKind)));
+    this.keysTika = this.input.keyboard.addKeys('SPACE,DOWN,S');
 
     this.petals = this.add
       .particles(0, 0, 'petal', {
@@ -118,20 +163,19 @@ export default class Night5 extends Phaser.Scene {
 
     this.buildHud();
     hudButtons(this, { pause: true });
-    // how to play: the first round starts only once the player says "Got it"
-    instructions(this, { kicker: 'DAY 5  ·  NIGHT 5', title: NIGHTS[5].name, sub: NIGHTS[5].goal }, () => this.startLevel());
+    this.startLevel();
   }
 
   startLevel() {
-    this.hint = hintPill(this, 'Watch Yamuna point, then tap the same colours in the same order', H - 34);
+    this.hint = hintPill(this, 'Yamuna has a gift for him: drag the garland to your brother (or press Space)', H - 34);
     this.time.delayedCall(10000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
-    this.time.delayedCall(700, () => this.newRound());
+    this.time.delayedCall(700, () => this.startTask('garland'));
   }
 
   buildHud() {
     const g = this.add.graphics().setDepth(900);
-    tornPaper(g, 18, 16, 7 * 34 + 36, 58, { seed: 23, amp: 2 });
-    this.roundDots = STRIPES.map((c, i) =>
+    tornPaper(g, 18, 16, 6 * 34 + 36, 58, { seed: 23, amp: 2 });
+    this.roundDots = TIKA.map((c, i) =>
       this.add.circle(18 + 36 + i * 34, 46, 10, c, 1).setDepth(905).setAlpha(0.25).setStrokeStyle(2, COLORS.soot, 0.7),
     );
     // how many slips are left
@@ -156,6 +200,12 @@ export default class Night5 extends Phaser.Scene {
   // ---------------------------------------------------------------- rounds
   newRound() {
     if (this.phase === 'won' || this.phase === 'lost') return;
+    if (this.round === 0 && !this.toldRounds) {
+      this.toldRounds = true;
+      this.hideHints();
+      this.hint2 = hintPill(this, 'Watch Yamuna point, then tap the same colours in the same order (or press 1 to 7)', H - 34);
+      this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint2, alpha: 0, duration: 600 }));
+    }
     const len = ROUNDS[this.round];
     this.seq = [];
     for (let i = 0; i < len; i++) {
@@ -217,17 +267,20 @@ export default class Night5 extends Phaser.Scene {
     this.roundDots[this.round].setAlpha(1);
     this.tweens.add({ targets: this.roundDots[this.round], scale: 1.5, yoyo: true, duration: 220 });
     this.round++;
-    this.drawStripes(true);
+    const last = this.round >= ROUNDS.length;
+    this.drawStripes(last ? this.round - 1 : this.round); // the last colour is laid in the close-up
     Sfx.chime();
-    this.setStatus(this.round >= ROUNDS.length ? 'The tika is complete!' : 'Beautiful. Another colour…');
+    this.setStatus(last ? 'One last colour…' : 'Beautiful. Another colour…');
     this.tweens.add({ targets: this.yamuna, y: YAMUNA.y - 12, yoyo: true, duration: 240 });
-    if (this.round >= ROUNDS.length) this.time.delayedCall(900, () => this.win());
+    if (last) this.time.delayedCall(1100, () => this.tikaClose());
+    else if (this.round === 4 && !this.tasks.fruit) this.time.delayedCall(1300, () => this.startTask('fruit'));
     else this.time.delayedCall(1500, () => this.newRound());
   }
 
   mistake() {
     this.phase = 'between';
     this.mistakes++;
+    this.slips++;
     Sfx.fail();
     this.cameras.main.shake(160, 0.004);
     const dot = this.slipDots[this.mistakes - 1];
@@ -239,6 +292,236 @@ export default class Night5 extends Phaser.Scene {
     this.time.delayedCall(1500, () => {
       if (this.phase === 'between') this.showSequence();
     });
+  }
+
+  // ---------------------------------------------------------------- ritual tasks
+  /** kind: 'garland' (drag it to the brother) or 'fruit' (drag the plate to Yama). Space does it for you. */
+  hideHints() {
+    [this.hint, this.hint2].forEach((h) => h && this.tweens.add({ targets: h, alpha: 0, duration: 300 }));
+  }
+
+  startTask(kind) {
+    if (this.phase === 'won' || this.phase === 'lost') return;
+    this.phase = 'task';
+    if (kind === 'fruit') this.hideHints();
+    this.taskKind = kind;
+    const item = kind === 'garland' ? this.garland : this.plate;
+    const home = kind === 'garland' ? { x: YAMUNA.x - 100, y: 470 } : { x: YAMUNA.x - 70, y: 524 };
+    item.setPosition(home.x, home.y).setAlpha(0);
+    item._home = home;
+    this.tweens.add({ targets: item, alpha: 1, duration: 500 });
+    this.setStatus(kind === 'garland' ? 'Drag the garland to your brother' : 'Offer Yama the dry fruits');
+    const z = this.zone(kind);
+    this.taskRing = this.add.image(z.x, z.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.4).setAlpha(0.4).setDepth(305);
+    this.tweens.add({ targets: this.taskRing, alpha: 0.75, scale: 2.9, yoyo: true, repeat: -1, duration: 700 });
+    this.bob = this.tweens.add({ targets: item, y: home.y - 8, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.easeInOut' });
+    item.setInteractive({ draggable: true, useHandCursor: true });
+    this.input.setDraggable(item);
+    item.removeAllListeners('drag');
+    item.removeAllListeners('dragstart');
+    item.removeAllListeners('dragend');
+    item.on('dragstart', () => this.bob?.stop());
+    item.on('drag', (p, x, y) => item.setPosition(x, y));
+    item.on('dragend', () => {
+      if (this.phase !== 'task') return;
+      const zz = this.zone(kind);
+      if (Math.hypot(item.x - zz.x, (item.y - zz.y) * 1.1) < zz.r) this.taskDone(kind);
+      else this.tweens.add({ targets: item, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
+    });
+    Sfx.chime();
+    this.time.delayedCall(9000, () => this.phase === 'task' && this.setStatus('…or press Space'));
+  }
+
+  zone(kind) {
+    if (kind === 'garland') return { x: KEEPER.x, y: KEEPER.y - this.keeper.displayHeight * 0.62, r: 150 };
+    return { x: this.yamaState.x - 40, y: 540, r: 200 };
+  }
+
+  taskDone(kind) {
+    if (this.phase !== 'task') return;
+    this.phase = 'between';
+    this.hideHints();
+    this.bob?.stop();
+    this.taskRing?.destroy();
+    this.tasks[kind] = true;
+    const item = kind === 'garland' ? this.garland : this.plate;
+    item.disableInteractive();
+    if (kind === 'garland') {
+      // the garland settles around his shoulders (placeholder: a flat garland; a "worn" overlay would look better)
+      item.setDepth(215);
+      this.tweens.add({ targets: item, x: KEEPER.x, y: KEEPER.y - this.keeper.displayHeight * 0.62 - 40, scale: 140 / item.width, angle: 0, duration: 450, ease: 'Back.easeOut' });
+      this.setStatus('He wears the garland. Now the tika…');
+    } else {
+      // Yama accepts the dry fruits and forgives one slip
+      this.tweens.add({ targets: item, x: this.yamaState.x - 60, y: 560, scale: item.scale * 0.8, alpha: 0, duration: 800, delay: 200 });
+      if (this.mistakes > 0) {
+        this.mistakes--;
+        this.slipDots[this.mistakes]?.setAlpha(1);
+      }
+      this.setStatus('Yama is touched. He waits a little longer.');
+    }
+    this.t = Math.max(0, this.t - TASK_BONUS);
+    this.updateThreat();
+    this.petals.explode(26, item.x, item.y - 40);
+    Sfx.shimmer();
+    this.time.delayedCall(1700, () => this.newRound());
+  }
+
+  // ---------------------------------------------------------------- the garland
+  /** A garland of magenta makhamali flowers with a few marigolds, hanging in a U: drawn in code (a placeholder for finished art). */
+  makeMala() {
+    if (this.textures.exists('mala_u')) return;
+    const w = 260;
+    const h = 124;
+    const tex = this.textures.createCanvas('mala_u', w, h);
+    const x = tex.getContext();
+    const pt = (t) => ({ px: 14 + (w - 28) * t, py: 14 + 72 * Math.sin(Math.PI * t) });
+    x.strokeStyle = '#3a1a28';
+    x.lineWidth = 3;
+    x.beginPath();
+    for (let i = 0; i <= 60; i++) {
+      const { px, py } = pt(i / 60);
+      if (i) x.lineTo(px, py);
+      else x.moveTo(px, py);
+    }
+    x.stroke();
+    const flowers = [];
+    let last = pt(0);
+    let acc = 0;
+    for (let i = 1; i <= 400; i++) {
+      const p = pt(i / 400);
+      acc += Math.hypot(p.px - last.px, p.py - last.py);
+      last = p;
+      if (acc >= 15) {
+        acc = 0;
+        flowers.push(p);
+      }
+    }
+    const cols = [['#b3155f', '#d9307f', '#f06aa8'], ['#a3124f', '#cc2a76', '#ea5c9c']];
+    flowers.forEach((p, i) => {
+      const marigold = i % 7 === 3;
+      const [dark, mid, light] = marigold ? ['#c8622b', '#f2a33a', '#ffd36e'] : cols[i % 2];
+      x.fillStyle = dark;
+      x.beginPath();
+      x.arc(p.px, p.py, 10.5, 0, Math.PI * 2);
+      x.fill();
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 + i;
+        x.fillStyle = k % 2 ? mid : light;
+        x.beginPath();
+        x.arc(p.px + Math.cos(a) * 5.4, p.py + Math.sin(a) * 5.4, 5.2, 0, Math.PI * 2);
+        x.fill();
+      }
+      x.fillStyle = marigold ? '#c8432b' : '#f9a5c8';
+      x.beginPath();
+      x.arc(p.px, p.py, 2.6, 0, Math.PI * 2);
+      x.fill();
+    });
+    const b = pt(0.5); // a small marigold tassel at the bottom
+    [[-8, 0], [0, 6], [8, 0]].forEach(([dx, dy]) => {
+      x.fillStyle = '#f2a33a';
+      x.beginPath();
+      x.arc(b.px + dx, b.py + 17 + dy, 5, 0, Math.PI * 2);
+      x.fill();
+      x.fillStyle = '#c8432b';
+      x.beginPath();
+      x.arc(b.px + dx, b.py + 17 + dy, 1.8, 0, Math.PI * 2);
+      x.fill();
+    });
+    tex.refresh();
+  }
+
+  // ---------------------------------------------------------------- the tika close-up
+  /** The climax: a close-up of his forehead. Swipe down it (or hold Space / the down arrow): the yellow bar is laid and six blossoms of colour appear along it. */
+  tikaClose() {
+    if (this.phase === 'won' || this.phase === 'lost') return;
+    this.phase = 'tika';
+    this.hideHints();
+    this.tikaP = 0;
+    this.tikaDone = false;
+    this.tikaPop = [];
+    this.setStatus('');
+    Sfx.chime();
+    const ui = this.add.container(0, 0).setDepth(920);
+    this.tikaUI = ui;
+    const veil = this.add.rectangle(0, 0, W, H, 0x120f1c, 0.88).setOrigin(0).setAlpha(0);
+    this.tweens.add({ targets: veil, alpha: 0.88, duration: 500 });
+    const img = this.add.image(0, 0, 'keeper').setOrigin(0, 0);
+    const tw = img.width;
+    const th = img.height;
+    const cropX = tw * 0.2;
+    const cropW = tw * 0.6;
+    const cropH = th * 0.3;
+    const s = Math.min(560 / cropW, 440 / cropH);
+    img.setCrop(cropX, 0, cropW, cropH).setScale(s);
+    const left = W / 2 - (cropW * s) / 2;
+    const top = 134;
+    img.setPosition(left - cropX * s, top);
+    const frame = this.add.graphics();
+    frame.fillStyle(COLORS.soot, 0.5).fillRoundedRect(left - 6, top - 4, cropW * s + 22, cropH * s + 22, 20);
+    frame.lineStyle(10, COLORS.cream, 1).strokeRoundedRect(left - 8, top - 8, cropW * s + 16, cropH * s + 16, 18);
+    const fy = top + FOREHEAD.fy * th * s + 6;
+    const fx = left - cropX * s + FOREHEAD.fx * tw * s;
+    this.tikaLayout = { fx, top: fy - 100, h: 138, bw: 30, r: 13.5 };
+    const L = this.tikaLayout;
+    this.tikaG = this.add.graphics();
+    // a dashed arrow beside the face: swipe this way
+    const gx = left + cropW * s - 26;
+    const guide = this.add.graphics();
+    guide.lineStyle(4, COLORS.turmeric, 0.85);
+    for (let y = L.top - 10; y < L.top + L.h + 24; y += 20) guide.lineBetween(gx, y, gx, y + 10);
+    guide.fillStyle(COLORS.turmeric, 0.95).fillTriangle(gx, L.top + L.h + 50, gx - 11, L.top + L.h + 26, gx + 11, L.top + L.h + 26);
+    const title = titleText(this, W / 2, 96, 'The tika', { size: 38, color: CSS.turmeric, depth: 0 });
+    const hint = text(this, W / 2, H - 66, 'Swipe down his forehead  ·  or hold Space / the down arrow', { size: 26, color: CSS.cream, depth: 0 });
+    this.tikaFinger = this.add.circle(0, 0, 20, COLORS.cream, 0.9).setStrokeStyle(4, COLORS.soot, 0.8).setVisible(false);
+    ui.add([veil, frame, img, this.tikaG, guide, title, hint, this.tikaFinger]);
+    ui.setAlpha(0);
+    this.tweens.add({ targets: ui, alpha: 1, duration: 500 });
+    this.tikaMove = (p) => {
+      if (this.phase !== 'tika' || this.tikaDone) return;
+      this.tikaFinger.setPosition(p.worldX, p.worldY).setVisible(true);
+      if (!p.isDown) return;
+      const u = Phaser.Math.Clamp((p.worldY - (L.top - 24)) / (L.h + 48), 0, 1);
+      this.tikaP = Math.max(this.tikaP, Math.min(u, this.tikaP + 0.22)); // a tap at the bottom cannot skip the swipe
+    };
+    this.input.on('pointermove', this.tikaMove);
+    this.input.on('pointerdown', this.tikaMove);
+  }
+
+  updateTika(dt) {
+    if (!this.tikaLayout || this.tikaDone) return;
+    const kb = this.keysTika;
+    if (kb.SPACE.isDown || kb.DOWN.isDown || kb.S.isDown) this.tikaP = Math.min(1, this.tikaP + dt * 0.4);
+    const L = this.tikaLayout;
+    const g = this.tikaG;
+    g.clear();
+    const reach = L.h * Math.min(1, this.tikaP * 1.04); // the yellow reaches further down as you swipe
+    if (reach > 2) tikaBar(g, L.fx, L.top, L.bw, reach);
+    for (let i = 0; i < 6; i++) {
+      const cy = L.top + (i + 0.5) * (L.h / 6);
+      if (reach < cy - L.top - 4) continue; // the swipe has not reached this blossom yet
+      if (this.tikaPop[i] === undefined) {
+        this.tikaPop[i] = this.time.now;
+        Sfx.note(i);
+        this.petals.explode(5, L.fx, cy);
+      }
+      const age = Math.min(1, (this.time.now - this.tikaPop[i]) / 260);
+      blossom(g, L.fx, cy, L.r, TIKA[i], age < 1 ? Phaser.Math.Easing.Back.Out(age) : 1);
+    }
+    if (this.tikaP >= 0.999) {
+      this.tikaDone = true;
+      this.input.off('pointermove', this.tikaMove);
+      this.input.off('pointerdown', this.tikaMove);
+      Sfx.fanfare();
+      this.tweens.add({
+        targets: this.tikaUI, alpha: 0, duration: 700, delay: 1100,
+        onComplete: () => {
+          this.tikaUI.destroy();
+          this.drawStripes(6);
+          this.win();
+        },
+      });
+    }
   }
 
   // ---------------------------------------------------------------- Yama
@@ -264,27 +547,29 @@ export default class Night5 extends Phaser.Scene {
     this.yama.setTint(Phaser.Display.Color.GetColor(c.r, c.g, c.b));
   }
 
-  drawStripes() {
+  /** The small tika on his forehead: the yellow bar with one blossom per round done. */
+  drawStripes(n = this.round) {
     const g = this.stripes;
     g.clear();
+    if (n <= 0) return;
     const k = this.keeper;
     const x0 = KEEPER.x + (FOREHEAD.fx - 0.5) * k.displayWidth;
     const y0 = KEEPER.y - k.displayHeight * (1 - FOREHEAD.fy);
-    const sw = 7;
-    const gap = 1.5;
-    const total = this.round * (sw + gap) - gap;
-    for (let i = 0; i < this.round; i++) {
-      g.fillStyle(STRIPES[i], 1).fillRoundedRect(x0 - total / 2 + i * (sw + gap), y0 - 10, sw, 20, 2);
-    }
+    const h = 42;
+    const top = y0 - 18;
+    tikaBar(g, x0, top, 11, h);
+    for (let i = 0; i < Math.min(6, n); i++) blossom(g, x0, top + (i + 0.5) * (h / 6), 4.8, TIKA[i]);
   }
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
     const dt = Math.min(delta / 1000, 0.05);
-    if (this.phase !== 'won' && this.phase !== 'lost' && this.phase !== 'intro') {
-      this.t += dt;
+    if (!['won', 'lost', 'intro', 'task', 'tika'].includes(this.phase)) {
+      this.t += dt; // the clock stops while a ritual task or the tika is under way
       this.updateThreat();
     }
+    this.yShadow.setPosition(this.yamaState.x + 90, 712).setScale((220 + 760 * this.threat) / 512, 0.14).setAlpha(0.16 + 0.42 * this.threat);
+    if (this.phase === 'tika') this.updateTika(dt);
     this.flames.update(time);
     this.yamuna.setAngle(stepNoise(time, 5, 6) * 0.9);
     this.yama.setAngle(stepNoise(time, 9, 6) * 0.7);
@@ -308,14 +593,17 @@ export default class Night5 extends Phaser.Scene {
     this.petals.explode(40, YAMUNA.x, 380);
     const t = titleText(this, W / 2, 190, 'Yama is pleased.', { size: 60, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, duration: 900, delay: 400 });
-    this.time.delayedCall(4600, () => {
-      completeNight(5, { mistakes: this.mistakes });
+    this.time.delayedCall(1500, () => Album.capture(this, 5));
+    const boon = text(this, W / 2, 250, 'A sister’s tika, a long life. Every brother is guarded today.', { size: 28, color: CSS.turmeric, depth: 950, bold: true }).setAlpha(0);
+    this.tweens.add({ targets: boon, alpha: 1, duration: 900, delay: 1800 });
+    this.time.delayedCall(3500, () => {
+      completeNight(5, { mistakes: this.slips });
       go(this, 'StoryCard', {
         night: 5,
         card: { ...NIGHTS[5].card, bg: NIGHTS[5].bg },
         stats: [
           { label: 'Colours of tika', value: '7/7' },
-          { label: 'Slips', value: String(this.mistakes) },
+          { label: 'Slips', value: String(this.slips) },
         ],
         next: NIGHTS[5].next,
         wicksBefore: 5,

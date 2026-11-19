@@ -22,7 +22,7 @@ export function save() {
 }
 
 // stats where a bigger number is better / a smaller number is better
-const MORE_IS_BETTER = ['crows', 'garlands', 'sparks', 'offerings'];
+const MORE_IS_BETTER = ['crows', 'garlands', 'sparks', 'offerings', 'spare', 'pct'];
 const LESS_IS_BETTER = ['splats', 'mistakes'];
 
 export function completeNight(n, stats = {}) {
@@ -51,4 +51,26 @@ export function bestLine(n) {
     5: () => (b.mistakes === undefined ? 'tika complete' : `tika complete, ${b.mistakes} ${b.mistakes === 1 ? 'slip' : 'slips'}`),
   };
   return parts[n] ? parts[n]() : '';
+}
+
+/** Start over: lock the nights again and forget the best results. */
+export function resetProgress() {
+  state.unlocked = 1;
+  state.best = {};
+  save();
+}
+
+/** 0 = not finished, otherwise 1-3 flames for how well the best run went. */
+export function rating(n) {
+  const b = state.best[n];
+  if (!b) return 0;
+  const by = (v, hi, mid) => (v >= hi ? 3 : v >= mid ? 2 : 1);
+  switch (n) {
+    case 1: return b.spare === undefined ? 1 : by(b.spare, 45, 20); // dusk to spare
+    case 2: return b.pct === undefined ? 1 : by(b.pct, 80, 50); // share of garlands gathered
+    case 3: return b.sparks === undefined ? 1 : by(b.sparks, 4, 2);
+    case 4: return b.splats === undefined ? 1 : b.splats === 0 ? 3 : b.splats <= 2 ? 2 : 1;
+    case 5: return b.mistakes === undefined ? 1 : b.mistakes === 0 ? 3 : b.mistakes <= 1 ? 2 : 1;
+    default: return 1;
+  }
 }

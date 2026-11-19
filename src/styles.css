@@ -13,14 +13,58 @@ html, body {
 #game { width: 100%; height: 100%; }
 #game canvas { display: block; touch-action: none; -webkit-tap-highlight-color: transparent; }
 
+/* shown until the game takes over (main.js removes it) */
+#boot { margin: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #efe2c4; font-family: 'Yatra One', serif; font-size: 44px; text-align: center; }
+#boot span { font-family: Kalam, cursive; font-size: 22px; color: #e8c44b; margin-top: 10px; }
+
 /* phones held upright: ask for landscape */
 #rotate {
   display: none;
   position: fixed; inset: 0; z-index: 10;
-  align-items: center; justify-content: center; text-align: center;
+  flex-direction: column; align-items: center; justify-content: center; text-align: center;
   background: #1a1714; color: #efe2c4;
   font-family: Kalam, cursive; font-size: 24px; padding: 24px;
 }
+#rotate .phone { position: relative; width: 54px; height: 88px; border: 5px solid #efe2c4; border-radius: 12px; margin-bottom: 26px;
+  animation: turn 2.6s ease-in-out infinite; }
+#rotate .phone::after { content: ''; position: absolute; left: 50%; bottom: 7px; width: 14px; height: 4px; margin-left: -7px; background: #e8c44b; border-radius: 2px; }
+@keyframes turn { 0%, 18% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (prefers-reduced-motion: reduce) { #rotate .phone { animation: none; transform: rotate(-90deg); } }
 @media (orientation: portrait) and (max-width: 820px) {
   #rotate { display: flex; }
 }
+
+/* the greeting-card maker (ui/greeting.js) */
+#greet { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+  background: rgba(18, 15, 28, 0.88); font-family: Kalam, cursive; padding: 12px; box-sizing: border-box; }
+#greet .gpanel { display: flex; gap: 28px; align-items: center; max-width: 980px; max-height: 94vh; padding: 24px; box-sizing: border-box;
+  background: #efe2c4; color: #1d2540; border: 4px solid #1d2540; border-radius: 6px; box-shadow: 8px 10px 0 rgba(0, 0, 0, 0.35); }
+#greet h2 { font-family: 'Yatra One', serif; font-weight: 400; margin: 0 0 6px; font-size: 32px; }
+#greet p { margin: 0 0 14px; font-size: 20px; }
+#greet label { display: block; font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+#greet input { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 10px 12px; font: inherit; font-size: 22px;
+  border: 3px solid #1d2540; border-radius: 6px; background: #fff8e6; color: #1d2540; }
+#greet .gbtns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+#greet button { font: inherit; font-weight: 700; font-size: 22px; padding: 10px 18px; border: 3px solid #1d2540; background: #f2a33a;
+  color: #1d2540; border-radius: 6px; cursor: pointer; }
+#greet button.ghost { background: transparent; }
+#greet canvas { height: min(80vh, 640px); width: auto; aspect-ratio: 4 / 5; border: 3px solid #1d2540; box-shadow: 4px 6px 0 rgba(0, 0, 0, 0.25); background: #fff; }
+@media (max-height: 520px) {
+  #greet .gpanel { gap: 16px; padding: 12px; }
+  #greet p, #greet h2 { display: none; }
+  #greet canvas { height: 78vh; }
+}
+@media (max-width: 700px) and (min-height: 521px) {
+  #greet .gpanel { flex-direction: column; overflow: auto; }
+  #greet canvas { height: 40vh; }
+}
+
+/* shown by main.js if the game throws an error */
+#oops { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 30; padding: 10px 16px; border: 3px solid #1d2540; border-radius: 6px;
+  background: #efe2c4; color: #1d2540; font-family: Kalam, cursive; font-size: 20px; box-shadow: 4px 5px 0 rgba(0, 0, 0, 0.35); }
+#oops button { margin-left: 10px; font: inherit; font-weight: 700; padding: 4px 12px; border: 2px solid #1d2540; background: #f2a33a; color: #1d2540; border-radius: 5px; cursor: pointer; }
+
+/* the game is not text: no accidental selection or long-press menus while playing (the card maker's boxes stay editable) */
+html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#greet input { -webkit-user-select: text; user-select: text; }

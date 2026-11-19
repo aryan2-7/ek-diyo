@@ -4,19 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#1A1714" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Five Nights" />
     <title>The Five Nights: one diya, five days</title>
     <meta name="description" content="A paper-cut Tihar game. Carry one diya through the five days of the festival of lights." />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="The Five Nights: one diya, five days" />
     <meta property="og:description" content="A paper-cut Tihar game. Carry one diya through the five days of the festival of lights." />
-    <!-- TODO after deploying: make this image URL absolute (https://YOUR-SITE/assets/title_bg.webp); most link previews need that -->
-    <meta property="og:image" content="/assets/title_bg.webp" />
+    <!-- %SITE_URL% is filled in at build time (vite.config.js): automatic on Vercel, or set VITE_SITE_URL. Link previews need absolute URLs. -->
+    <meta property="og:url" content="%SITE_URL%/" />
+    <meta property="og:image" content="%SITE_URL%/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%94%3C/text%3E%3C/svg%3E" />
+    <meta name="twitter:image" content="%SITE_URL%/og.jpg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
   </head>
   <body>
-    <div id="game"></div>
-    <div id="rotate"><p>Please turn your phone sideways to play.<br />The Five Nights is best in landscape.</p></div>
+    <!-- shown until the game takes over the page (removed in main.js) -->
+    <div id="game"><p id="boot">The Five Nights<span>lighting the diya…</span></p></div>
+    <noscript><p style="color:#efe2c4;font-family:sans-serif;text-align:center;padding:40px">The Five Nights needs JavaScript to run.</p></noscript>
+    <div id="rotate">
+      <div class="phone"></div>
+      <p>Please turn your phone sideways to play.<br />The Five Nights is best in landscape.</p>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { FlameCluster } from './Flame.js';
 import { snap, stepNoise } from './Motion.js';
+import { Sfx } from './sfx.js';
 
 const lerp = Phaser.Math.Linear;
 // where the diya sits on each Keeper sprite (fractions of displayed width / height)
@@ -37,6 +38,14 @@ export class Keeper {
       })
       .setDepth(770);
     this.embers.startFollow(this.flames, 0, -30);
+    this.dust = scene.add
+      .particles(0, 0, 'ember', {
+        lifespan: 380, speedX: { min: -34, max: 34 }, speedY: { min: -26, max: -6 },
+        scale: { start: 0.5, end: 0 }, alpha: { start: 0.4, end: 0 }, tint: 0xd9c9a0, emitting: false,
+      })
+      .setDepth(750);
+    this._lastHop = 0;
+    this._lastStep = 0;
 
     this.cursors = scene.input.keyboard.createCursorKeys();
     this.wasd = scene.input.keyboard.addKeys('W,A,S,D');
@@ -109,6 +118,12 @@ export class Keeper {
     const ts = snap(time, 12);
     const walkSq = this.moving ? Math.abs(Math.sin(ts * 0.0094)) * 0.035 : 0;
     const hop = this.moving ? Math.abs(Math.sin(ts * 0.0094)) * 7 : 0;
+    if (this.moving && this._lastHop > 3.5 && hop <= 3.5 && time - this._lastStep > 170) {
+      this._lastStep = time; // a foot comes down: soft thud and a puff of dust
+      Sfx.step();
+      this.dust.explode(2, this.x - this.dir * 8, this.y - 2);
+    }
+    this._lastHop = hop;
     spr.setRotation(this.moving ? stepNoise(time, 1, 12) * 0.035 : 0);
     spr.setScale(sc * (1 - idleSq - walkSq), sc * (1 + idleSq + walkSq));
     spr.setFlipX(this.face === 'side' && this.dir < 0);
@@ -129,7 +144,7 @@ export class Keeper {
       fx = cx + this.dir * this.held.displayWidth * 0.44;
       fy = cy - this.held.displayHeight * 0.44;
     }
-    this.flames.setSize(dh * 0.2);
+    this.flames.setSize(dh * 0.15); // was 0.2: the flame covered his face
     this.flames.setPosition(fx, fy);
     this.flames.update(time);
     if (this.light) {

@@ -1,20 +1,22 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, CSS } from '../config.js';
-import { NIGHTS } from '../data/nights.js';
+import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
+import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
-import { FlameCluster } from '../systems/Flame.js';
+import { Flame, FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, popText } from '../ui/ui.js';
 
 // ---- the annakut, the hill of offerings ------------------------------------
 const CX = 644; // the swept cream circle on the courtyard floor is the build spot
 const BASE_Y = 652; // where the first dung pats sit
 const SWING_CX = 644; // offerings drift above the spot, swinging left and right
-const SWING_Y = 150;
+const SWING_Y = 170;
 const SWING_AMP = 300;
 const SWING_W = 1.5; // radians per second
+const ROPE_L = 900; // the offering hangs from a long rope far above the screen, so it swings in a gentle arc (higher at the ends)
 const GRAV = 2400;
 const FALL_MAX = 1500; // falling speed cap
 const V_MAX = 175; // horizontal carry at release, capped so aiming stays fair
@@ -23,7 +25,7 @@ const NEED = 14; // offerings to place; the 15th swing is the maha-deep
 const LEAN_MAX = 21; // degrees; lean past this and the top layers slide off
 const LEAN_PER_PX = 0.12; // how far off-centre a drop tilts the hill
 const PERFECT = 14; // a drop this close steadies the hill
-const DURATION = 95; // evening seconds
+const DURATION = 60; // evening seconds
 
 const OFFER_KEYS = ['thali_grain', 'bowl_rice', 'bowl_curd', 'dry_fruit_plate'];
 // the art is painted as high three-quarter views; sq shrinks it so layers read flat and squat
@@ -67,12 +69,15 @@ export default class Night4 extends Phaser.Scene {
     this.swap = null; // { key, w, h }
     this.ph = 0;
     this.ambient = 0.52;
+    this.streak = 0;
+    this.walkers = [];
   }
 
   create() {
     fadeIn(this);
     this.cameras.main.setBackgroundColor(CSS.soot);
     globalKeys(this);
+    Sfx.setLevel(NIGHT_LEVEL[4]);
     coverBg(this, 'bg_n4', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: this.ambient });
@@ -84,6 +89,14 @@ export default class Night4 extends Phaser.Scene {
     this.hill = this.add.container(CX, BASE_Y).setDepth(500);
 
     this.guide = this.add.graphics().setDepth(600);
+    this.rope = this.add.graphics().setDepth(539);
+
+    // the Keeper watches from the left of the courtyard with his four wicks, and cheers when the hill stands steady
+    this.keeper = this.add.image(112, 712, 'keeper').setOrigin(0.5, 1).setDepth(520);
+    this.keeperScale = 250 / this.keeper.height;
+    this.keeper.setScale(this.keeperScale);
+    this.kFlame = new FlameCluster(this, 4, { size: 37, depth: 521 });
+    this.kLight = this.light.add({ x: 120, y: 600, radius: 240, flicker: 0.05 });
 
     this.petals = this.add
       .particles(0, 0, 'petal', {
@@ -101,8 +114,7 @@ export default class Night4 extends Phaser.Scene {
     this.buildHud();
     hudButtons(this, { pause: true });
 
-    // how to play: the building only starts once the player says "Got it"
-    instructions(this, { kicker: 'DAY 4  ·  NIGHT 4', title: NIGHTS[4].name, sub: NIGHTS[4].goal }, () => this.startLevel());
+    this.startLevel();
   }
 
   startLevel() {
@@ -182,6 +194,7 @@ export default class Night4 extends Phaser.Scene {
   drop() {
     if (this.phase !== 'swing' || !this.started || this.over) return;
     this.phase = 'fall';
+    this.tweens.add({ targets: this.item, rotation: 0, duration: 160 }); // the rope lets go: the offering straightens as it falls
     // carry the swing's speed with the drop, but cap it so it stays fair
     this.vx = Phaser.Math.Clamp(SWING_AMP * SWING_W * Math.cos(this.ph), -V_MAX, V_MAX);
     this.vy = 0;
@@ -207,9 +220,14 @@ export default class Night4 extends Phaser.Scene {
     // a solid centre drop steadies the hill; a sloppy one leans it further
     if (Math.abs(dx) < PERFECT) {
       this.lean *= 0.5;
+      this.streak++;
       Sfx.chime();
+      Sfx.perfect();
       this.petals.explode(8, wx, landY - 24);
+      popText(this, wx, landY - 70, this.streak > 1 ? `Steady ×${this.streak}` : 'Steady!');
+      this.cheer();
     } else {
+      this.streak = 0;
       this.lean += (wx - topX) * LEAN_PER_PX;
       Sfx.land();
     }
@@ -246,6 +264,8 @@ export default class Night4 extends Phaser.Scene {
   // the offering missed the hill entirely: it lands beside it, no death, just lost seconds
   splat(dx) {
     this.miss++;
+    this.streak = 0;
+    this.flinch();
     const spr = this.item;
     this.item = null;
     const side = Math.sign(dx) || 1;
@@ -274,6 +294,8 @@ export default class Night4 extends Phaser.Scene {
       });
     });
     this.lean *= 0.28;
+    this.streak = 0;
+    this.flinch();
     Sfx.slide();
     Sfx.fail();
     this.say.setText('Too steep — the top slid off!');
@@ -289,6 +311,7 @@ export default class Night4 extends Phaser.Scene {
     this.over = true;
     Sfx.fanfare();
     this.say.setText('');
+    if (this.hint) this.tweens.add({ targets: this.hint, alpha: 0, duration: 400 });
     // the maha-deep burns at the crown
     this.flame = new FlameCluster(this, 1, { size: 54, depth: 640 });
     this.flame.setPosition(wx, landY - h * 0.34);
@@ -300,11 +323,13 @@ export default class Night4 extends Phaser.Scene {
     this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: this.hillLight, radius: 560, duration: 1600 });
     this.tweens.add({ targets: this, ambient: 0.34, duration: 1800 });
+    // parikrama removed
+    this.time.delayedCall(2600, () => Album.capture(this, 4));
     this.petals.explode(60, CX, BASE_Y - 280);
     const t = titleText(this, W / 2, 250, 'The hill is crowned.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900 });
     const left = Math.max(0, Math.round(DURATION - this.t));
-    this.time.delayedCall(4200, () => {
+    this.time.delayedCall(6600, () => {
       completeNight(4, { offerings: NEED, splats: this.miss });
       go(this, 'StoryCard', {
         night: 4,
@@ -338,8 +363,11 @@ export default class Night4 extends Phaser.Scene {
 
     if (this.phase === 'swing' && this.item) {
       this.ph += SWING_W * dt;
-      this.item.x = SWING_CX + SWING_AMP * Math.sin(this.ph);
-      this.item.y = SWING_Y + Math.sin(this.ph * 2) * 6;
+      const sx = SWING_AMP * Math.sin(this.ph); // the same sideways path as before; only the height changed
+      const th = Math.asin(Phaser.Math.Clamp(sx / ROPE_L, -1, 1));
+      this.item.x = SWING_CX + sx;
+      this.item.y = SWING_Y - ROPE_L * (1 - Math.cos(th));
+      this.item.setRotation(th * 0.55);
     } else if (this.phase === 'fall' && this.item) {
       this.vy = Math.min(this.vy + GRAV * dt, FALL_MAX);
       this.item.x += this.vx * dt;
@@ -353,7 +381,10 @@ export default class Night4 extends Phaser.Scene {
     this.hill.angle = this.displayLean;
 
     this.drawGuide();
+    this.drawRope();
     this.flame?.update?.(time);
+    this.updateKeeper(time);
+    this.updateWalkers(dt);
 
     const k = Math.min(1, this.t / DURATION);
     this.marker.x = this.barX + this.barW * k;
@@ -361,6 +392,68 @@ export default class Night4 extends Phaser.Scene {
     this.light.update(time);
 
     if (!this.over && this.started && this.t >= DURATION) this.lose();
+  }
+
+  /** The rope the offering hangs from (without it the first offering is just a brown disc floating in mid-air). */
+  drawRope() {
+    const g = this.rope;
+    g.clear();
+    if (this.phase !== 'swing' || !this.item) return;
+    const px = SWING_CX;
+    const py = SWING_Y - ROPE_L;
+    const ax = this.item.x;
+    const ay = this.item.y - this.swap.h / 2 + 6;
+    g.lineStyle(6, 0x3a2a18, 0.85).lineBetween(px, py, ax, ay);
+    g.lineStyle(3.5, 0xb98a4a, 1).lineBetween(px, py, ax, ay);
+    g.fillStyle(0x3a2a18, 1).fillCircle(ax, ay, 7);
+    g.fillStyle(0xd9b266, 1).fillCircle(ax, ay, 4);
+  }
+
+  updateKeeper(time) {
+    const k = this.keeper;
+    const b = Math.sin(time * 0.002) * 0.008;
+    k.setScale(this.keeperScale * (1 - b), this.keeperScale * (1 + b));
+    this.kFlame.setPosition(k.x + (0.47 - 0.5) * k.displayWidth, k.y - k.displayHeight * (1 - 0.405));
+    this.kFlame.update(time);
+  }
+
+  cheer() {
+    this.tweens.add({ targets: this.keeper, y: this.keeper.y - 22, duration: 150, yoyo: true, ease: 'Quad.easeOut' });
+  }
+
+  flinch() {
+    this.tweens.add({ targets: this.keeper, angle: { from: -6, to: 0 }, duration: 420, ease: 'Elastic.easeOut' });
+  }
+
+  /** After the crowning, the family walks past the hill with lamps (parikrama). Placeholder figures: the Keeper picture, tinted and small. */
+  parikrama() {
+    for (let i = 0; i < 5; i++) {
+      const spr = this.add.image(0, 0, 'keeper').setOrigin(0.5, 1).setTint(i % 2 ? 0x2a2f55 : 0x3a2f48).setDepth(560).setAlpha(0);
+      const fl = new Flame(this, 0, 0, { size: 22, depth: 561 });
+      const light = this.light.add({ x: 0, y: 0, radius: 120, flicker: 0.06 });
+      this.walkers.push({ spr, fl, light, u: -i * 0.2 });
+      this.tweens.add({ targets: spr, alpha: 1, duration: 700 });
+    }
+  }
+
+  updateWalkers(dt) {
+    for (const w of this.walkers) {
+      w.u += dt * 0.085;
+      const u = ((w.u % 1) + 1) % 1; // each one walks across in front of the hill, then comes round again
+      const x = CX + Phaser.Math.Linear(-420, 420, u);
+      const y = BASE_Y + 44 + Math.sin(u * Math.PI) * 26;
+      const sc = Phaser.Math.Linear(0.9, 1.1, Math.sin(u * Math.PI));
+      const h = 128 * sc;
+      const bob = Math.abs(Math.sin(u * 60)) * 4;
+      w.spr.setPosition(x, y - bob).setScale(h / w.spr.height).setDepth(560 + y * 0.01);
+      w.spr.setAlpha(Math.min(1, Math.min(u, 1 - u) * 8));
+      const fx = x + (0.47 - 0.5) * w.spr.displayWidth;
+      const fy = y - bob - h * (1 - 0.405);
+      w.fl.setPosition(fx, fy);
+      w.fl.update(this.time.now);
+      w.light.x = fx;
+      w.light.y = fy;
+    }
   }
 
   drawGuide() {
@@ -375,7 +468,7 @@ export default class Night4 extends Phaser.Scene {
     g.strokeEllipse(topX, landY - 4, topW * 0.9 + this.swap.w * 0.5, 26);
     // the drop carries the swing's speed, so show where it will actually land
     const vx = this.phase === 'fall' ? this.vx : Phaser.Math.Clamp(SWING_AMP * SWING_W * Math.cos(this.ph), -V_MAX, V_MAX);
-    const d = Math.max(0, landY - this.item.y);
+    const d = Math.max(0, landY - this.item.y - this.swap.h / 2);
     const tFall = Math.sqrt((2 * d) / GRAV);
     const px = Phaser.Math.Clamp(this.item.x + vx * tFall, 30, W - 30);
     g.fillStyle(COLORS.cream, 0.28);

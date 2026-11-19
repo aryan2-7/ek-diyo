@@ -1,0 +1,5 @@
+{
+  "_help": "Optional real audio. Leave both lists empty and the game uses its built-in synthesized sound. See docs/AUDIO.md. 'sfx': name of an effect (click, chime, caw, flap, light, jump, land, collect, hit, yelp, bark, slide, paper, whoosh, note, fanfare, bell, fail, step, cowbell, footprint, shimmer, perfect, tick) -> file in this folder. 'stems': five loops of the SAME length (layer 1 = drone only ... layer 5 = full), played in sync; one more layer joins as each wick is lit.",
+  "sfx": {},
+  "music": { "stems": [] }
+}

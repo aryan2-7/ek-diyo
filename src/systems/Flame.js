@@ -72,7 +72,7 @@ const SLOTS = [
 
 // The five-wick lamp (five_diya.webp) already has all five wicks drawn; each slot is where a wick tip is
 // (fractions of the sprite). They light centre first, then inner pair, then outer pair.
-const SLOTS_FIVE = [
+export const SLOTS_FIVE = [
   { x: 0.503, y: 0.486, own: true },
   { x: 0.165, y: 0.503, own: true },
   { x: 0.826, y: 0.503, own: true },

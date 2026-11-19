@@ -1,15 +1,16 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, CSS } from '../config.js';
-import { NIGHTS } from '../data/nights.js';
+import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
+import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish, snap, stepNoise } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, popText } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-const DURATION = 85; // seconds until dusk is gone
+const DURATION = 55; // seconds until dusk is gone
 const GOAL = 10; // crows to feed
 const MAX_PLATES = 3;
 const LIGHT_TIME = 0.85; // seconds beside a plate to light it
@@ -41,15 +42,19 @@ export default class Night1 extends Phaser.Scene {
     this.plates = [];
     this.crows = [];
     this.lastFlap = 0;
+    this.nextGust = 9; // seconds of play (after the first 8) until the first gust
+    this.crowsSent = 0;
+    this.toldAboutGusts = false;
   }
 
   create() {
     fadeIn(this);
     this.cameras.main.setBackgroundColor(CSS.soot);
     globalKeys(this);
+    Sfx.setLevel(NIGHT_LEVEL[1]);
     coverBg(this, 'bg_n1', 0);
 
-    this.light = new Lighting(this, { depth: 800, ambient: 0.04 });
+    this.light = new Lighting(this, { depth: 800, ambient: 0.1 });
     finish(this);
     paperGrain(this, 0.12);
 
@@ -61,6 +66,13 @@ export default class Night1 extends Phaser.Scene {
     this.k.onFirstMove = () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 800, delay: 2500 });
 
     this.ringGfx = this.add.graphics().setDepth(820);
+    // marigold petals blown across the roof by a gust
+    this.gustFx = this.add
+      .particles(0, 0, 'petal', {
+        x: -20, y: { min: 380, max: 720 }, lifespan: 1500, speedX: { min: 420, max: 720 }, speedY: { min: -60, max: 60 },
+        rotate: { start: 0, end: 540 }, scale: { min: 0.6, max: 1.1 }, tint: [0xf2a33a, 0xc8432b, 0xe8c44b], emitting: false,
+      })
+      .setDepth(830);
 
     this.buildHud();
     hudButtons(this, { pause: true });
@@ -191,6 +203,11 @@ export default class Night1 extends Phaser.Scene {
     const base = lerp(150, 200, depthT(p.y)) / spr.width;
     spr.setScale(base);
     const c = { spr, base, mode: 'fly', seed: Math.random() * 6, p };
+    this.crowsSent++;
+    if (this.crowsSent === 4 || this.crowsSent === 9) {
+      c.golden = true; // a rare golden crow: counts for two
+      spr.setTint(0xffd36e);
+    }
     this.crows.push(c);
     if (!this.lost) Sfx.flap();
     this.tweens.addCounter({
@@ -213,19 +230,36 @@ export default class Night1 extends Phaser.Scene {
 
   crowLands(c) {
     const { spr, p, base } = c;
+    // a gust blew the plate out while the crow was still on its way: it turns back
+    if (c.scared || p.state !== 'lit') {
+      this.crowFlees(c);
+      return;
+    }
     c.mode = 'perch';
     spr.setTexture('crow_perched').setOrigin(0.5, 1).setRotation(0).setDepth(p.y + 1);
     const pw = lerp(125, 175, depthT(p.y));
     c.pBase = pw / spr.width;
     spr.setScale(c.pBase * 1.15, c.pBase * 0.85).setPosition(p.perch.x, p.perch.y).setFlipX(spr.flipX);
     this.tweens.add({ targets: spr, scaleX: c.pBase, scaleY: c.pBase, duration: 260, ease: 'Back.easeOut' });
-    if (!this.lost) Sfx.caw();
+    if (!this.lost) Sfx.caw((p.x / W - 0.5) * 1.2);
     p.state = 'eating';
-    this.fed++;
-    const icon = this.hudCrows[this.fed - 1];
-    if (icon) {
+    const gain = c.golden ? 2 : 1;
+    this.fed = Math.min(GOAL, this.fed + gain);
+    for (let i = this.fed - gain; i < this.fed; i++) {
+      const icon = this.hudCrows[i];
+      if (!icon) continue;
       icon.setAlpha(1);
+      if (c.golden) icon.setTint(0xffd36e);
       this.tweens.add({ targets: icon, scale: icon.scale * 1.5, yoyo: true, duration: 200 });
+    }
+    if (c.golden) {
+      Sfx.shimmer();
+      popText(this, spr.x, spr.y - 150, 'A golden crow!  +2');
+      const em = this.add
+        .particles(spr.x, spr.y - 60, 'ember', { speed: { min: 60, max: 190 }, lifespan: 900, scale: { start: 1.2, end: 0 }, blendMode: 'ADD', tint: 0xffd36e, emitting: false })
+        .setDepth(845);
+      em.explode(20);
+      this.time.delayedCall(1200, () => em.destroy());
     }
     this.tweens.add({ targets: spr, angle: { from: -2, to: 7 }, yoyo: true, repeat: 4, duration: 240, delay: 380 });
     if (this.fed >= GOAL) this.time.delayedCall(1200, () => this.win());
@@ -261,6 +295,72 @@ export default class Night1 extends Phaser.Scene {
     this.time.delayedCall(2400, () => this.spawnPlate());
   }
 
+  /** A crow whose plate went out: it flies away without eating. */
+  crowFlees(c) {
+    const { spr } = c;
+    c.mode = 'leave';
+    const goLeft = spr.x < W / 2;
+    spr.setFlipX(goLeft);
+    this.tweens.add({
+      targets: spr, x: goLeft ? -220 : W + 220, y: Phaser.Math.Between(20, 140), duration: 1500, ease: 'Quad.easeIn',
+      onUpdate: () => spr.setRotation(goLeft ? 0.25 : -0.25),
+      onComplete: () => {
+        spr.destroy();
+        this.crows.splice(this.crows.indexOf(c), 1);
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------- gusts
+  say(str) {
+    const t = text(this, W / 2, 118, str, { size: 26, color: CSS.cream, depth: 930 }).setAlpha(0);
+    this.tweens.add({ targets: t, alpha: 1, duration: 300 });
+    this.tweens.add({ targets: t, alpha: 0, delay: 3400, duration: 600, onComplete: () => t.destroy() });
+  }
+
+  gustWarning() {
+    Sfx.whoosh();
+    this.gustFx.explode(16);
+    if (!this.toldAboutGusts) {
+      this.toldAboutGusts = true;
+      this.say('A gust! Stand beside a lit plate to shield its flame.');
+    }
+    this.time.delayedCall(850, () => this.gust());
+  }
+
+  shielded(p) {
+    const dx = this.k.x - p.x;
+    const dy = (this.k.y - p.y) * 1.7;
+    return dx * dx + dy * dy < 230 * 230;
+  }
+
+  gust() {
+    if (this.over) return;
+    for (const p of this.plates.slice()) {
+      if (p.state !== 'lit') continue;
+      if (this.shielded(p)) {
+        // cupped hands: the flame bends but holds
+        const r = this.add.image(p.x, p.y - p.dh * 0.3, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(1.2).setAlpha(0.7).setDepth(835);
+        this.tweens.add({ targets: r, scale: 2.6, alpha: 0, duration: 520, onComplete: () => r.destroy() });
+        Sfx.perfect();
+      } else this.blowOut(p);
+    }
+  }
+
+  blowOut(p) {
+    p.state = 'idle';
+    p.prog = 0;
+    p.spark = this.add.image(p.x, p.y - p.dh * 0.35, 'star').setDepth(812).setAlpha(0.6);
+    this.tweens.add({ targets: p.glow, alpha: 0, duration: 250 });
+    if (p.light) {
+      const l = p.light;
+      p.light = null;
+      this.tweens.add({ targets: l, radius: 0, duration: 250, onComplete: () => this.light.remove(l) });
+    }
+    this.crows.filter((c) => c.p === p && c.mode === 'fly').forEach((c) => (c.scared = true));
+    Sfx.hit();
+  }
+
   updateCrows(time) {
     for (const c of this.crows) {
       if (c.mode === 'fly' || c.mode === 'leave') {
@@ -282,9 +382,16 @@ export default class Night1 extends Phaser.Scene {
     this.k.update(time, dt);
     this.updatePlates(dt, time);
     this.updateCrows(time);
+    if (this.started && !this.over && this.t > 8) {
+      this.nextGust -= dt;
+      if (this.nextGust <= 0) {
+        this.nextGust = Phaser.Math.Between(14, 20);
+        this.gustWarning();
+      }
+    }
 
     const k = Math.min(1, this.t / DURATION);
-    this.light.ambient = this.won ? this.winAmbient : 0.04 + 0.8 * Math.pow(k, 1.25);
+    this.light.ambient = this.won ? this.winAmbient : 0.1 + 0.74 * Math.pow(k, 1.25);
     this.light.update(time);
     this.sun.x = this.barX + this.barW * k;
 
@@ -300,14 +407,15 @@ export default class Night1 extends Phaser.Scene {
     this.won = true;
     this.k.enabled = false;
     Sfx.fanfare();
-    const from = 0.04 + 0.8 * Math.pow(Math.min(1, this.t / DURATION), 1.25);
+    const from = 0.1 + 0.74 * Math.pow(Math.min(1, this.t / DURATION), 1.25);
     this.winAmbient = from;
     this.tweens.addCounter({ from, to: 0.3, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
     const t = titleText(this, W / 2, 250, 'The crows are fed.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900 });
     const left = Math.max(0, Math.round(DURATION - this.t));
+    this.time.delayedCall(1700, () => Album.capture(this, 1));
     this.time.delayedCall(3600, () => {
-      completeNight(1, { crows: this.fed });
+      completeNight(1, { crows: this.fed, spare: left });
       go(this, 'StoryCard', {
         night: 1,
         card: { ...NIGHTS[1].card, bg: NIGHTS[1].bg },

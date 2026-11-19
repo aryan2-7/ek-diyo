@@ -1,0 +1,17 @@
+{
+  "name": "The Five Nights",
+  "short_name": "Five Nights",
+  "description": "A paper-cut Tihar game. Carry one diya through the five days of the festival of lights.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#1A1714",
+  "theme_color": "#1A1714",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

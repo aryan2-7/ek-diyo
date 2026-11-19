@@ -1,47 +1,15 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, CSS } from '../config.js';
-import { NIGHTS } from '../data/nights.js';
+import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
+import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly, outlined } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-/** Bakes a sticker-style outline (cream inner, soot outer) around a sprite so it reads on any background. */
-function outlined(scene, src, key, inner = 8, outer = 6) {
-  const pad = inner + outer + 2;
-  if (!scene.textures.exists(key)) {
-    const img = scene.textures.get(src).getSourceImage();
-    const w = img.width + pad * 2;
-    const h = img.height + pad * 2;
-    const silhouette = (color, r) => {
-      const s = document.createElement('canvas');
-      s.width = img.width;
-      s.height = img.height;
-      const sx = s.getContext('2d');
-      sx.drawImage(img, 0, 0);
-      sx.globalCompositeOperation = 'source-in';
-      sx.fillStyle = color;
-      sx.fillRect(0, 0, s.width, s.height);
-      const c = document.createElement('canvas');
-      c.width = w;
-      c.height = h;
-      const cx = c.getContext('2d');
-      for (let a = 0; a < 20; a++) cx.drawImage(s, pad + Math.cos((a / 20) * Math.PI * 2) * r, pad + Math.sin((a / 20) * Math.PI * 2) * r);
-      return c;
-    };
-    const tex = scene.textures.createCanvas(key, w, h);
-    const ctx = tex.getContext();
-    ctx.drawImage(silhouette(CSS.soot, inner + outer), 0, 0);
-    ctx.drawImage(silhouette(CSS.cream, inner), 0, 0);
-    ctx.drawImage(img, pad, pad);
-    tex.refresh();
-  }
-  return pad;
-}
-
 const GROUND = 655; // y of the street the dog runs on
 const DOG_X = 330;
 const RUN_TILT = 0.052; // ~3 degrees nose-down: puts the hind and front paws on one level
@@ -49,9 +17,9 @@ const JUMP_TILT = -0.14; // ~8 degrees nose-up at the top of a leap
 const GRAVITY = 2400;
 const JUMP_V = -1200; // the original big, floaty leap: about 300 px high when you hold the button
 const SPEED = 430; // one steady pace: the challenge is reading the road, not outgrowing it
-const TRACK = 36000; // distance (px) from start to the gate  (~80 s)
-const NO_SPAWN_LAST = 2600; // stop spawning obstacles this far before the gate
-const DIYA_FLOAT = { x: W - 150, y: 140 }; // the diya escorts from up top, out of the road's way
+const TRACK_EST = 23000; // rough distance to the gate until the last garlands are planned (the run ends once they are gathered)
+const GARLAND_GOAL = 45; // total garlands in the whole run: shorter run
+const DIYA_FLOAT = { x: DOG_X + 250, y: 205 }; // the diya floats just ahead of the dog, so its light is where the action is
 // ---------------------------------------------------------------------------
 
 const lerp = Phaser.Math.Linear;
@@ -76,6 +44,9 @@ export default class Night2 extends Phaser.Scene {
     this.speed = 0;
     this.garlands = 0;
     this.garlandsSeen = 0;
+    this.track = TRACK_EST;
+    this.finale = false;
+    this.prog = 0;
     this.stumbles = 0;
     this.stumble = 0;
     this.invuln = 0;
@@ -91,13 +62,14 @@ export default class Night2 extends Phaser.Scene {
     this.gallop = 0;
     this.dogRot = RUN_TILT;
     this.landUntil = 0;
-    this.ambBase = 0.2; // keep the scene clearly visible: only a slight night tint (no lamp lights here)
+    this.ambBase = 0.12; // clearly visible, only a slight night tint; the diya lights the dog's patch of street
     this.t = 0;
   }
 
   create() {
     fadeIn(this);
     this.cameras.main.setBackgroundColor(CSS.soot);
+    Sfx.setLevel(NIGHT_LEVEL[2]);
     globalKeys(this);
 
     // two copies of the (already mirrored, seamless) street, scrolling
@@ -114,6 +86,7 @@ export default class Night2 extends Phaser.Scene {
     this.light = new Lighting(this, { depth: 800, ambient: this.ambBase });
     finish(this);
     paperGrain(this, 0.12);
+    this.buildForeground();
 
     // the Keeper stays behind on the street
     this.keeper = this.add.image(250, GROUND + 14, 'keeper_side').setOrigin(0.5, 1).setDepth(GROUND + 20);
@@ -159,9 +132,9 @@ export default class Night2 extends Phaser.Scene {
     this.input.on('pointerup', release);
 
     this.buildHud();
-    hudButtons(this, { pause: true, x: W - 136 }); // the centre is taken by the progress bar
-    // how to play: the run starts only once the player says "Got it"
-    instructions(this, { kicker: 'DAY 2  ·  NIGHT 2', title: NIGHTS[2].name, sub: NIGHTS[2].goal }, () => this.startIntro());
+    hudButtons(this, { pause: true, x: W - 150 }); // the centre is taken by the progress bar
+    // start right away
+    this.startIntro();
   }
 
   // intro beat: the diya rises from the Keeper's hand and floats ahead, then the dog is off
@@ -184,8 +157,68 @@ export default class Night2 extends Phaser.Scene {
           this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
         },
       });
-      this.tweens.addCounter({ from: 0.2, to: 0.35, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
+      this.tweens.addCounter({ from: 0.12, to: 0.22, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
     });
+  }
+
+  /** Marigold bunting across the top and a strip of cobbles along the bottom, drawn in code and scrolled faster than the street. */
+  buildForeground() {
+    if (!this.textures.exists('fg_bunting')) {
+      const tex = this.textures.createCanvas('fg_bunting', 1280, 130);
+      const x = tex.getContext();
+      x.lineCap = 'round';
+      const SEG = 320;
+      [[30, 42, '#1a1714'], [62, 26, '#241f2e']].forEach(([y0, sag, col], row) => {
+        const yAt = (px) => {
+          const u = (px % SEG) / SEG;
+          return y0 + sag * (1 - Math.pow(2 * u - 1, 2));
+        };
+        x.strokeStyle = col;
+        x.lineWidth = 3;
+        x.beginPath();
+        for (let px = 0; px <= 1280; px += 8) (px ? x.lineTo(px, yAt(px)) : x.moveTo(px, yAt(px)));
+        x.stroke();
+        const beads = ['#f2a33a', '#e8c44b', '#c8432b'];
+        for (let px = 6, i = 0; px < 1280; px += 15, i++) {
+          x.fillStyle = beads[(i + row) % 3];
+          x.beginPath();
+          x.arc(px, yAt(px) + 5, 5.5, 0, Math.PI * 2);
+          x.fill();
+        }
+        // a small pennant hanging where each sag is deepest
+        for (let k = 0; k < 4; k++) {
+          const px = k * SEG + SEG / 2 + row * 40;
+          x.fillStyle = row ? '#1d2540' : '#c8432b';
+          x.beginPath();
+          x.moveTo(px - 11, yAt(px) + 8);
+          x.lineTo(px + 11, yAt(px) + 8);
+          x.lineTo(px, yAt(px) + 40);
+          x.closePath();
+          x.fill();
+        }
+      });
+      tex.refresh();
+    }
+    if (!this.textures.exists('fg_cobble')) {
+      const tex = this.textures.createCanvas('fg_cobble', 256, 40);
+      const x = tex.getContext();
+      x.fillStyle = '#191b2b';
+      x.fillRect(0, 0, 256, 40);
+      let seed = 5;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let row = 0; row < 2; row++) {
+        for (let px = -20 + row * 24; px < 256; px += 50 + Math.floor(rnd() * 22)) {
+          const w = 36 + rnd() * 18;
+          x.fillStyle = ['#2b2f4a', '#353a5c', '#262a42'][Math.floor(rnd() * 3)];
+          x.beginPath();
+          x.roundRect(px, 3 + row * 19, w, 15, 4);
+          x.fill();
+        }
+      }
+      tex.refresh();
+    }
+    this.fgTop = this.add.tileSprite(0, 0, W, 130, 'fg_bunting').setOrigin(0).setDepth(790);
+    this.fgBot = this.add.tileSprite(0, H - 34, W, 34, 'fg_cobble').setOrigin(0).setDepth(791);
   }
 
   // ---------------------------------------------------------------- HUD
@@ -195,6 +228,7 @@ export default class Night2 extends Phaser.Scene {
     const icon = this.add.image(62, 46, 'marigold_mala').setDepth(905);
     icon.setScale(66 / icon.width);
     this.garText = text(this, 150, 46, '0', { size: 34, color: CSS.indigo, bold: true, shadow: false, depth: 906 });
+    this.garText.setFontSize('30px');
     // progress to the gate
     const bw = 470;
     this.trackX = W / 2 - bw / 2 + 36;
@@ -228,6 +262,12 @@ export default class Night2 extends Phaser.Scene {
   // side-by-side pair that one leap clears with room to spare, and the triple is three separate hops.
   spawnPattern() {
     const x0 = W + 150;
+    // the last garlands come as one wave, so the total is exactly GARLAND_GOAL
+    const remaining = GARLAND_GOAL - this.garlandsSeen;
+    if (remaining <= 10) {
+      this.spawnFinale(remaining);
+      return;
+    }
     const PATTERNS = [
       { w: 3, obs: [['pots', 0]], gap: [850, 1350] },
       { w: 3, obs: [['baskets', 0]], gap: [800, 1250] },
@@ -271,7 +311,24 @@ export default class Night2 extends Phaser.Scene {
     this.nextSpawn = this.dist + last + Phaser.Math.Between(chosen.gap[0], chosen.gap[1]);
   }
 
+  /** The final wave of garlands (no obstacles). Once it has gone by, the gate appears. */
+  spawnFinale(n) {
+    const x0 = W + 150;
+    for (let i = 0; i < n; i++) this.addGarland(x0 + i * 170, GROUND - 120 - Math.sin((n > 1 ? i / (n - 1) : 0.5) * Math.PI) * 170);
+    this.finale = true;
+    this.nextSpawn = Infinity;
+    this.track = this.dist + (x0 + (n - 1) * 170 - DOG_X) + 2100;
+  }
+
+  /** How far through the run (0-1), from the distance and how many garlands have appeared. It never goes backwards. */
+  progress() {
+    const total = this.finale ? this.track : this.dist + Math.max(0, GARLAND_GOAL - this.garlandsSeen) * 334 + 2600;
+    this.prog = Math.max(this.prog, Math.min(1, this.dist / total));
+    return this.prog;
+  }
+
   addGarland(x, y) {
+    if (this.garlandsSeen >= GARLAND_GOAL) return;
     // glow + shadow so the garland reads against the marigold-heavy street
     const shadow = this.add.ellipse(x, y + 6, 120, 42, COLORS.soot, 0.45).setDepth(GROUND + 7);
     const glow = this.add.image(x, y - 16, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(1.5).setAlpha(0.95).setDepth(GROUND + 7);
@@ -308,8 +365,8 @@ export default class Night2 extends Phaser.Scene {
     if (this.phase === 'run' || this.phase === 'gate') this.scroll(move, dt);
 
     // spawn
-    if (this.phase === 'run' && this.dist >= this.nextSpawn && this.dist < TRACK - NO_SPAWN_LAST) this.spawnPattern();
-    if (this.phase === 'run' && !this.gate && this.dist >= TRACK - 1700) {
+    if (this.phase === 'run' && this.dist >= this.nextSpawn && !this.finale) this.spawnPattern();
+    if (this.phase === 'run' && !this.gate && this.dist >= this.track - 1700) {
       this.gate = this.add.image(W + 260, GROUND + 10, 'gate').setOrigin(0.5, 1).setDepth(GROUND - 2);
       this.gate.setScale(0.92);
       this.phase = 'gate';
@@ -320,7 +377,7 @@ export default class Night2 extends Phaser.Scene {
 
     // light & darkness
     this.light.ambient = this.ambBase;
-    const kRun = Math.min(1, this.dist / TRACK);
+    const kRun = this.progress();
     const lp = this.rig.lightPoint();
     this.diyaLight.x = lp.x;
     this.diyaLight.y = lp.y;
@@ -329,15 +386,18 @@ export default class Night2 extends Phaser.Scene {
     this.light.update(time);
 
     // HUD
-    const k = Math.min(1, this.dist / TRACK);
+    const k = this.progress();
     this.dogIcon.x = this.trackX + this.trackW * k;
-    this.garText.setText(String(this.garlands));
+    this.garText.setText(`${this.garlands}/${GARLAND_GOAL}`);
   }
 
   scroll(move, dt) {
     const off = this.dist % this.bgW;
     this.bgA.x = -off;
     this.bgB.x = -off + this.bgW;
+    // the foreground layers run faster than the street: that is what makes it look deep
+    this.fgTop.tilePositionX = this.dist * 1.35;
+    this.fgBot.tilePositionX = this.dist * 1.25;
     // keeper & gate are part of the street
     this.keeper.x -= move;
     this.keeper.setVisible(this.keeper.x > -200);
@@ -487,6 +547,7 @@ export default class Night2 extends Phaser.Scene {
     this.phase = 'done';
     Sfx.fanfare();
     Sfx.bark();
+    this.time.delayedCall(2600, () => Album.capture(this, 2));
     this.dog.setVisible(false);
     this.shadow.setVisible(false);
     const sit = this.add.image(DOG_X + 20, GROUND + 6, 'dog_tika').setOrigin(0.5, 1).setDepth(GROUND + 20);
@@ -498,7 +559,7 @@ export default class Night2 extends Phaser.Scene {
     const t = titleText(this, W / 2, 250, 'The gate is safe.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900, delay: 500 });
     this.time.delayedCall(4200, () => {
-      completeNight(2, { garlands: this.garlands });
+      completeNight(2, { garlands: this.garlands, pct: this.garlandsSeen ? Math.round((100 * this.garlands) / this.garlandsSeen) : 100 });
       go(this, 'StoryCard', {
         night: 2,
         card: { ...NIGHTS[2].card, bg: NIGHTS[2].bg },

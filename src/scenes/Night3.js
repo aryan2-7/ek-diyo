@@ -1,18 +1,19 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, CSS } from '../config.js';
-import { NIGHTS } from '../data/nights.js';
+import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
+import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish, snap, stepNoise } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, outlined } from '../ui/ui.js';
 
 const lerp = Phaser.Math.Linear;
 
 // ---- tuning -------------------------------------------------------------
-const DURATION = 75; // seconds until midnight
+const DURATION = 45; // seconds until midnight
 const MAX_SPARKS = 5;
 const FLOOR = { top: 420, bottom: 700 };
 // the courtyard floor in bg_n3: [y, left edge, right edge] - keeps everyone off the side benches and walls
@@ -26,8 +27,8 @@ function edgeAt(y, i) {
 }
 const leftAt = (y) => edgeAt(y, 1);
 const rightAt = (y) => edgeAt(y, 2);
-const GUST_WARNING = 0.9; // seconds between the whoosh and the lamps dimming
-const REFILL = 1.15; // oil per second while the Keeper stands beside a lamp
+const GUST_WARNING = 0.7; // seconds between the whoosh and the lamps dimming
+const REFILL = 1.0; // oil per second while the Keeper stands beside a lamp
 // the four lamps stand on the courtyard floor in a shallow arc, framing the middle archway
 const LAMPS = [
   { x: 270, y: 478 },
@@ -53,16 +54,19 @@ export default class Night3 extends Phaser.Scene {
     this.garlandsGiven = 0;
     this.blessing = 0;
     this.started = false;
-    this.nextGust = 18;
-    this.nextGarland = 7;
+    this.nextGust = 10;
+    this.nextGarland = 5;
     this.winAmbient = 0;
     this.won = false;
+    this.lastBell = 0;
+    this.flareMul = 1;
   }
 
   create() {
     fadeIn(this);
     this.cameras.main.setBackgroundColor(CSS.soot);
     globalKeys(this);
+    Sfx.setLevel(NIGHT_LEVEL[3]);
     coverBg(this, 'bg_n3', 0);
 
     this.light = new Lighting(this, { depth: 800, ambient: 0.4 });
@@ -107,17 +111,20 @@ export default class Night3 extends Phaser.Scene {
       })
       .setDepth(830);
 
+    this.spark = this.add
+      .particles(0, 0, 'ember', { speed: { min: 30, max: 110 }, lifespan: 700, scale: { start: 1, end: 0 }, blendMode: 'ADD', tint: 0xffd36e, emitting: false })
+      .setDepth(8);
+    this.cowMark = this.add.image(0, 0, 'star').setDepth(900).setVisible(false).setScale(0.6); // points at the cow while you carry a garland
     this.buildHud();
     hudButtons(this, { pause: true });
-    // how to play: the night begins only once the player says "Got it" (the lamps wait too)
     this.k.enabled = false;
-    instructions(this, { kicker: 'DAY 3  ·  NIGHT 3', title: NIGHTS[3].name, sub: NIGHTS[3].goal }, () => this.startLevel());
+    this.startLevel();
   }
 
   startLevel() {
     this.started = true;
     this.k.enabled = true;
-    this.hint = hintPill(this, 'Stand beside a lamp to refill its oil  ·  keep the lanes lit', H - 44);
+    this.hint = hintPill(this, 'Stand beside a lamp to refill it, and to shield it from the wind', H - 44);
     this.time.delayedCall(10000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
   }
 
@@ -159,7 +166,7 @@ export default class Night3 extends Phaser.Scene {
   updateLamps(dt, time) {
     const k = this.k;
     // oil only burns down once the night has started
-    const rate = !this.started || this.over ? 0 : lerp(1 / 21, 1 / 12, Math.min(1, this.t / DURATION)) * (this.blessing > 0 ? 0.35 : 1);
+    const rate = !this.started || this.over ? 0 : lerp(1 / 16, 1 / 9, Math.min(1, this.t / DURATION)) * (this.blessing > 0 ? 0.35 : 1);
     this.bars.clear();
     for (const l of this.lamps) {
       const dx = k.x - l.x;
@@ -191,10 +198,10 @@ export default class Night3 extends Phaser.Scene {
       l.flame.setSize(40 * fl);
       l.flame.setVisible(l.lit);
       l.flame.update(time);
-      l.light.radius = l.lit ? 210 * (0.6 + 0.4 * Math.min(1, l.oil * 2)) : 0;
+      l.light.radius = (l.lit ? 210 * (0.6 + 0.4 * Math.min(1, l.oil * 2)) : 0) * this.flareMul;
       // oil gauge
-      this.bars.fillStyle(COLORS.soot, 0.5).fillRoundedRect(l.x - 28, l.y + 26, 56, 8, 3);
-      if (l.oil > 0.01) this.bars.fillStyle(l.oil < 0.28 ? COLORS.vermilion : COLORS.marigold, 1).fillRoundedRect(l.x - 27, l.y + 27, 54 * l.oil, 6, 2);
+      this.bars.fillStyle(COLORS.soot, 0.55).fillRoundedRect(l.x - 33, l.y + 26, 66, 11, 4);
+      if (l.oil > 0.01) this.bars.fillStyle(l.oil < 0.28 ? COLORS.vermilion : COLORS.marigold, 1).fillRoundedRect(l.x - 31, l.y + 28, 62 * l.oil, 7, 3);
     }
   }
 
@@ -216,9 +223,20 @@ export default class Night3 extends Phaser.Scene {
 
   gust() {
     if (this.over) return;
-    const picks = Phaser.Utils.Array.Shuffle(this.lamps.filter((l) => l.lit)).slice(0, 2);
-    // a gust dims two lamps but never blows one out on its own
-    picks.forEach((l) => (l.oil = Math.max(Math.min(l.oil, 0.15), l.oil - 0.45)));
+    const picks = Phaser.Utils.Array.Shuffle(this.lamps.filter((l) => l.lit && !l.near)).slice(0, 2);
+    // a gust dims two unguarded lamps; after the first half of the night it can blow a weak one right out
+    picks.forEach((l, i) => {
+      if (i === 0 && this.t > 30 && l.oil < 0.55) l.oil = 0;
+      else l.oil = Math.max(Math.min(l.oil, 0.15), l.oil - 0.45);
+    });
+    // the lamps you stand beside: cupped hands, the flame bends but holds
+    this.lamps
+      .filter((l) => l.lit && l.near)
+      .forEach((l) => {
+        const r = this.add.image(l.x, l.y - 40, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(0.9).setAlpha(0.7).setDepth(835);
+        this.tweens.add({ targets: r, scale: 2.2, alpha: 0, duration: 520, onComplete: () => r.destroy() });
+        Sfx.perfect();
+      });
   }
 
   // ---------------------------------------------------------------- cow & garlands
@@ -236,11 +254,11 @@ export default class Night3 extends Phaser.Scene {
       const dx = c.tx - c.x;
       const dy = c.ty - c.y;
       const d = Math.hypot(dx, dy);
-      if (d < 6) c.pause = Phaser.Math.FloatBetween(2, 4.5);
+      if (d < 6) c.pause = Phaser.Math.FloatBetween(1, 2.5);
       else {
         const calm = this.blessing > 0 ? 0.55 : 1; // during the blessing she ambles
-        c.x += (dx / d) * 42 * calm * dt;
-        c.y += (dy / d) * 26 * calm * dt;
+        c.x += (dx / d) * 55 * calm * dt;
+        c.y += (dy / d) * 34 * calm * dt;
         if (Math.abs(dx) > 4) c.dir = dx > 0 ? 1 : -1;
       }
     }
@@ -248,6 +266,13 @@ export default class Night3 extends Phaser.Scene {
     const ts = snap(time, 8);
     const bob = walking ? Math.abs(Math.sin(ts * (this.blessing > 0 ? 0.004 : 0.006))) * (this.blessing > 0 ? 6 : 3) : Math.sin(time * 0.002) * 0.6;
     this.cowSpr.setPosition(c.x, c.y - bob).setFlipX(c.dir < 0).setDepth(c.y);
+    const kk = this.k;
+    const hidden = kk.y < c.y && Math.abs(kk.x - c.x) < 150 && c.y - kk.y < 170;
+    this.cowSpr.setAlpha(Phaser.Math.Linear(this.cowSpr.alpha, hidden ? 0.42 : 1, 0.2));
+    if (walking && time - this.lastBell > 2600) {
+      this.lastBell = time;
+      Sfx.cowbell();
+    }
     if (c.eat > 0) this.cowSpr.setAngle(Math.sin(time * 0.012) * 1.8);
     else this.cowSpr.setAngle(walking ? stepNoise(time, 3, 8) * 1.1 : 0);
     // the cow is solid: nudge the Keeper around her
@@ -273,11 +298,13 @@ export default class Night3 extends Phaser.Scene {
       x = Phaser.Math.Between(leftAt(y) + 40, rightAt(y) - 40);
       if (Math.hypot(x - this.cow.x, (y - this.cow.y) * 2) > 260 && Math.hypot(x - this.k.x, y - this.k.y) > 200) break;
     }
-    const spr = this.add.image(x, y, 'marigold_mala').setDepth(y);
-    spr.setScale(100 / spr.width).setAlpha(0);
+    const pad = outlined(this, 'marigold_mala', 'mala_outlined');
+    const spr = this.add.image(x, y, 'mala_outlined').setDepth(y);
+    spr.setScale(104 / (spr.width - pad * 2)).setAlpha(0);
     this.tweens.add({ targets: spr, alpha: 1, duration: 500 });
-    const glow = this.add.image(x, y - 10, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(y - 1).setScale(0.7).setAlpha(0.5);
-    this.items.push({ x, y, spr, glow });
+    const glow = this.add.image(x, y - 10, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setDepth(y - 1).setScale(1.5).setAlpha(0.6);
+    const mark = this.add.image(x, y - 78, 'star').setDepth(y + 1).setScale(0.55);
+    this.items.push({ x, y, spr, glow, mark });
     this.say('A marigold garland! Carry it to the cow.');
   }
 
@@ -292,12 +319,17 @@ export default class Night3 extends Phaser.Scene {
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
       it.spr.y = it.y + Math.sin(time * 0.004 + i) * 4;
-      it.glow.setAlpha(0.35 + 0.2 * Math.sin(time * 0.006));
-      if (!this.over && !this.carry && Math.hypot(k.x - it.x, (k.y - it.y) * 1.5) < 80) {
+      it.glow.setAlpha(0.6 + 0.3 * Math.sin(time * 0.006));
+      it.mark.y = it.y - 78 + Math.sin(time * 0.006 + i) * 6;
+      // a generous oval around his feet and body (it used to be a small circle at the feet only)
+      const dxk = (k.x - it.x) / 150;
+      const reach = Math.min(Math.hypot(dxk, (k.y - it.y) / 110), Math.hypot(dxk, (k.y - 70 - it.y) / 110));
+      if (!this.over && !this.carry && reach < 1) {
         this.carry = true;
         Sfx.collect();
         it.spr.destroy();
         it.glow.destroy();
+        it.mark.destroy();
         this.items.splice(i, 1);
         this.say('Now bring it to the cow.');
       }
@@ -308,6 +340,8 @@ export default class Night3 extends Phaser.Scene {
       const c = this.cow;
       if (!this.over && Math.hypot((k.x - c.x) / 190, (k.y - c.y) / 70) < 1) this.garlandCow();
     } else this.carrySpr.setVisible(false);
+    this.cowMark.setVisible(this.carry && !this.over);
+    if (this.carry) this.cowMark.setPosition(this.cow.x, this.cow.y - 262 + Math.sin(time * 0.006) * 7);
   }
 
   garlandCow() {
@@ -327,7 +361,7 @@ export default class Night3 extends Phaser.Scene {
     Sfx.chime();
     Sfx.bell();
     this.say('Gai Puja done. The lamps are filled and burn slowly.');
-    this.nextGarland = this.t + 20;
+    this.nextGarland = this.t + 10;
   }
 
   // ---------------------------------------------------------------- loop
@@ -343,7 +377,7 @@ export default class Night3 extends Phaser.Scene {
     if (!this.over) {
       if (this.t >= this.nextGust) {
         this.warnGust();
-        this.nextGust = this.t + Phaser.Math.FloatBetween(11, 15);
+        this.nextGust = this.t + Phaser.Math.FloatBetween(7, 9);
       }
       if (this.t >= this.nextGarland && !this.carry && !this.items.length) this.spawnGarland();
       if (this.t >= DURATION) this.win();
@@ -364,12 +398,13 @@ export default class Night3 extends Phaser.Scene {
     this.k.enabled = false;
     Sfx.fanfare();
     this.winAmbient = 0.4 + 0.36;
-    this.tweens.addCounter({ from: this.winAmbient, to: 0.22, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
+    this.tweens.addCounter({ from: this.winAmbient, to: 0.44, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
     this.lamps.forEach((l) => (l.oil = Math.max(l.oil, 0.6)));
     const t = titleText(this, W / 2, 230, 'Laxmi walks the lit lanes.', { size: 58, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 216, duration: 900 });
     const burning = this.lamps.filter((l) => l.lit).length;
-    this.time.delayedCall(3800, () => {
+    const walkEnd = this.laxmiWalks(burning);
+    this.time.delayedCall(walkEnd + 1500, () => {
       completeNight(3, { sparks: this.sparks });
       go(this, 'StoryCard', {
         night: 3,
@@ -382,6 +417,73 @@ export default class Night3 extends Phaser.Scene {
         wicksBefore: 3,
       });
     });
+  }
+
+  /** Golden lotus footprints (a placeholder drawn in code) walk in from the gate toward the brightest door. Returns when she arrives (ms). */
+  makeFootprint() {
+    if (this.textures.exists('footprint')) return;
+    const tex = this.textures.createCanvas('footprint', 72, 120);
+    const x = tex.getContext();
+    const shapes = (fill, stroke, lw) => {
+      x.fillStyle = fill;
+      x.strokeStyle = stroke;
+      x.lineWidth = lw;
+      const draw = () => {
+        if (lw) x.stroke();
+        x.fill();
+      };
+      x.beginPath(); x.ellipse(36, 98, 15, 17, 0, 0, Math.PI * 2); draw(); // heel
+      x.beginPath(); x.moveTo(24, 86); x.quadraticCurveTo(19, 70, 21, 56); x.lineTo(52, 56); x.quadraticCurveTo(54, 72, 47, 88); x.closePath(); draw(); // arch
+      x.beginPath(); x.ellipse(38, 50, 22, 28, -0.08, 0, Math.PI * 2); draw(); // ball of the foot
+      [[56, 18, 8.5], [41, 11, 7.5], [27, 14, 6.5], [16, 22, 5.8], [9, 33, 5]].forEach(([tx, ty, r]) => { x.beginPath(); x.arc(tx, ty, r, 0, Math.PI * 2); draw(); }); // toes
+    };
+    shapes('#b07a1e', '#b07a1e', 6); // outline pass...
+    shapes('#f2b84b', '#f2b84b', 0); // ...then the gold on top, so the outline is one clean edge
+    x.fillStyle = '#fff3cf'; // a little lotus on the ball of the foot
+    for (let i = 0; i < 6; i++) {
+      const a = -Math.PI / 2 + (i - 2.5) * 0.55;
+      x.beginPath();
+      x.ellipse(38 + Math.cos(a) * 7, 49 + Math.sin(a) * 7, 3.2, 7, a + Math.PI / 2, 0, Math.PI * 2);
+      x.fill();
+    }
+    tex.refresh();
+  }
+
+  laxmiWalks(burning) {
+    this.makeFootprint();
+    const TOTAL = 10;
+    const steps = 6 + burning; // every lamp that is lit carries her one step further
+    const START = 700;
+    const GAP = 250;
+    for (let i = 0; i < steps; i++) {
+      const u = i / (TOTAL - 1);
+      const y = lerp(690, 396, u);
+      const x = 640 + (i % 2 ? 34 : -34) * lerp(1, 0.5, u);
+      const sc = lerp(0.95, 0.4, u);
+      this.time.delayedCall(START + i * GAP, () => {
+        const glow = this.add.image(x, y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setDepth(5).setScale(sc * 0.95).setAlpha(0);
+        const fp = this.add.image(x, y, 'footprint').setDepth(6).setScale(sc * 0.6).setFlipX(i % 2 === 1).setAngle(Phaser.Math.Between(-5, 5)).setAlpha(0);
+        this.tweens.add({ targets: [fp, glow], alpha: 1, duration: 320 });
+        this.tweens.add({ targets: glow, alpha: 0.45, delay: 320, duration: 900 });
+        this.spark.explode(5, x, y);
+        Sfx.footprint(i);
+      });
+    }
+    const end = START + steps * GAP;
+    this.time.delayedCall(end, () => {
+      // she arrives: the doorway glows, petals fall, the lamps flare
+      const strong = burning >= 4;
+      const flare = this.add.image(640, 330, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setDepth(7).setScale(1).setAlpha(0);
+      this.tweens.add({ targets: flare, scale: strong ? 9 : 5, alpha: strong ? 0.8 : 0.45, duration: 1100, ease: 'Sine.easeOut' });
+      this.petals.explode(strong ? 70 : 30, 640, 300);
+      this.tweens.addCounter({ from: 1, to: 1.4, duration: 700, yoyo: true, onUpdate: (tw) => (this.flareMul = tw.getValue()) });
+      if (strong) Sfx.shimmer();
+      else Sfx.chime();
+      Sfx.bell();
+      this.say(strong ? 'Every lamp burned: Laxmi reached the door.' : 'Laxmi walked as far as your lamps lit the way.');
+      this.time.delayedCall(1300, () => Album.capture(this, 3));
+    });
+    return end;
   }
 
   lose() {

@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "assets": "python3 tools/process_assets.py"
+    "assets": "python3 tools/process_assets.py",
+    "smoke": "python3 tools/smoke_test.py"
   },
   "license": "MIT",
   "dependencies": {

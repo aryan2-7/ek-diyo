@@ -78,7 +78,7 @@ export const NIGHTS = {
     goal: 'Stack the annakut, offering by offering, and crown it with the maha-deep.',
     bg: 'bg_n4',
     card: {
-      art: 'keeper',
+      art: 'card_hill',
       title: 'Govardhan Puja: the Hill of Food',
       body:
         'On the fourth day families build a small hill of cow dung and offerings — the annakut, a "mountain of food" — and crown it with a lit lamp, walking around it in circles. It retells the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.\n\n' +
@@ -106,3 +106,6 @@ export const NIGHTS = {
     next: 'Ending',
   },
 };
+
+// How many of the five music layers play in each scene (0 = prologue). One more voice joins as each wick is lit.
+export const NIGHT_LEVEL = { 0: 1, 1: 2, 2: 3, 3: 4, 4: 4, 5: 5 };

@@ -1,0 +1,10 @@
+// Credits screen. Edit freely: { h: heading, t: text }. Fill in the "Special thanks" line before you submit.
+export const CREDITS = [
+  { h: 'The Five Nights', t: 'one diya, five days' },
+  { h: 'Game, art direction and code', t: 'Aryan Khatri' },
+  { h: 'Made for', t: 'the KUCC Tihar–Chhath Web UI Contest 2026\nKathmandu University Computer Club' },
+  { h: 'Art', t: 'generated with AI image tools, then cut out, composited and animated by hand and in code' },
+  { h: 'Music and sound', t: 'synthesized live in your browser (Web Audio)' },
+  { h: 'Built with', t: 'Phaser 3 and Vite · fonts Yatra One and Kalam (SIL Open Font License)' },
+  { h: 'Special thanks', t: 'Claude, Gemini and ChatGPT, for help with the code, the art and the ideas' },
+];
