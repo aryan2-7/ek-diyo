@@ -8,7 +8,7 @@ import { Keeper } from '../systems/Keeper.js';
 import { Flame } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish, snap, stepNoise } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, outlined } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, outlined, reviewerControls } from '../ui/ui.js';
 
 const lerp = Phaser.Math.Linear;
 
@@ -117,6 +117,7 @@ export default class Night3 extends Phaser.Scene {
     this.cowMark = this.add.image(0, 0, 'star').setDepth(900).setVisible(false).setScale(0.6); // points at the cow while you carry a garland
     this.buildHud();
     hudButtons(this, { pause: true });
+    reviewerControls(this);
     this.k.enabled = false;
     this.startLevel();
   }
@@ -366,13 +367,27 @@ export default class Night3 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
-    const dt = Math.min(delta / 1000, 0.05);
+    let dt = Math.min(delta / 1000, 0.05);
+    if (this.fastPlay) dt *= 2;
     if (this.started && !this.over) this.t += dt;
     this.blessing = Math.max(0, this.blessing - dt);
     this.k.update(time, dt);
     this.updateCow(dt, time);
     this.updateLamps(dt, time);
     this.updateItems(time);
+    if (this.autoPlay && this.started && !this.over && this.k?.enabled) {
+      if (this.carry) {
+        this.k.target = { x: this.cow.x, y: this.cow.y };
+      } else if (this.items && this.items.length) {
+        this.k.target = { x: this.items[0].x, y: this.items[0].y };
+      } else {
+        let lowest = null;
+        for (const l of this.lamps) {
+          if (!lowest || l.oil < lowest.oil) lowest = l;
+        }
+        if (lowest) this.k.target = { x: lowest.x, y: lowest.y + 18 };
+      }
+    }
 
     if (!this.over) {
       if (this.t >= this.nextGust) {

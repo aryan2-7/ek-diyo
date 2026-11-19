@@ -7,7 +7,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { Flame, FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, popText } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, popText, reviewerControls } from '../ui/ui.js';
 
 // ---- the annakut, the hill of offerings ------------------------------------
 const CX = 644; // the swept cream circle on the courtyard floor is the build spot
@@ -113,6 +113,7 @@ export default class Night4 extends Phaser.Scene {
     this.say = text(this, W / 2, 96, '', { size: 28, color: CSS.cream, depth: 906 });
     this.buildHud();
     hudButtons(this, { pause: true });
+    reviewerControls(this);
 
     this.startLevel();
   }
@@ -188,6 +189,7 @@ export default class Night4 extends Phaser.Scene {
     this.item.setScale(s, s * SQ[spec.key]);
     this.ph = Phaser.Math.FloatBetween(0, Math.PI * 2);
     this.phase = 'swing';
+    this._spawnTime = this.t;
     this.say.setText(NAMES[spec.key]);
   }
 
@@ -358,9 +360,19 @@ export default class Night4 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
-    const dt = Math.min(delta / 1000, 0.05);
+    let dt = Math.min(delta / 1000, 0.05);
+    if (this.fastPlay) dt *= 2;
     if (this.started && !this.over) this.t += dt;
 
+    if (this.autoPlay && this.phase === 'swing' && this.item && this.t - (this._spawnTime || 0) > 0.4) {
+      const landY = BASE_Y - this.landed.length * DROP;
+      const topX = CX + Math.sin(Phaser.Math.DegToRad(this.displayLean)) * (BASE_Y - landY);
+      const vx = Phaser.Math.Clamp(SWING_AMP * SWING_W * Math.cos(this.ph), -V_MAX, V_MAX);
+      const d = Math.max(0, landY - this.item.y - this.swap.h / 2);
+      const tFall = Math.sqrt((2 * d) / GRAV);
+      const px = Phaser.Math.Clamp(this.item.x + vx * tFall, 30, W - 30);
+      if (Math.abs(px - topX) < 24) this.drop();
+    }
     if (this.phase === 'swing' && this.item) {
       this.ph += SWING_W * dt;
       const sx = SWING_AMP * Math.sin(this.ph); // the same sideways path as before; only the height changed

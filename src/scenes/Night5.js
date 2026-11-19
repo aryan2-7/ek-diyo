@@ -7,7 +7,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish, stepNoise } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, reviewerControls, labelPill } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const ROUNDS = [1, 2, 3, 4, 5, 6]; // colours Yamuna shows in each of the six rounds: every round lays one blossom of the tika
@@ -163,6 +163,7 @@ export default class Night5 extends Phaser.Scene {
 
     this.buildHud();
     hudButtons(this, { pause: true });
+    reviewerControls(this);
     this.startLevel();
   }
 
@@ -491,7 +492,7 @@ export default class Night5 extends Phaser.Scene {
   updateTika(dt) {
     if (!this.tikaLayout || this.tikaDone) return;
     const kb = this.keysTika;
-    if (kb.SPACE.isDown || kb.DOWN.isDown || kb.S.isDown) this.tikaP = Math.min(1, this.tikaP + dt * 0.4);
+    if (kb.SPACE.isDown || kb.DOWN.isDown || kb.S.isDown || this.autoPlay) this.tikaP = Math.min(1, this.tikaP + dt * (this.autoPlay ? 0.9 : 0.4));
     const L = this.tikaLayout;
     const g = this.tikaG;
     g.clear();
@@ -563,13 +564,33 @@ export default class Night5 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
-    const dt = Math.min(delta / 1000, 0.05);
+    let dt = Math.min(delta / 1000, 0.05);
+    if (this.fastPlay) dt *= 2;
     if (!['won', 'lost', 'intro', 'task', 'tika'].includes(this.phase)) {
       this.t += dt; // the clock stops while a ritual task or the tika is under way
       this.updateThreat();
     }
     this.yShadow.setPosition(this.yamaState.x + 90, 712).setScale((220 + 760 * this.threat) / 512, 0.14).setAlpha(0.16 + 0.42 * this.threat);
     if (this.phase === 'tika') this.updateTika(dt);
+    if (this.autoPlay) {
+      if (this.phase === 'task' && !this._autoTaskPending) {
+        this._autoTaskPending = true;
+        this.time.delayedCall(400, () => {
+          this._autoTaskPending = false;
+          if (this.autoPlay && this.phase === 'task') this.taskDone(this.taskKind);
+        });
+      }
+      if (this.phase === 'input') {
+        if (this._autoTapCooldown === undefined) this._autoTapCooldown = 0.6;
+        this._autoTapCooldown -= dt;
+        if (this._autoTapCooldown <= 0 && this.inputIdx < this.seq.length) {
+          this.tap(this.seq[this.inputIdx]);
+          this._autoTapCooldown = 0.42;
+        }
+      } else {
+        this._autoTapCooldown = undefined;
+      }
+    }
     this.flames.update(time);
     this.yamuna.setAngle(stepNoise(time, 5, 6) * 0.9);
     this.yama.setAngle(stepNoise(time, 9, 6) * 0.7);

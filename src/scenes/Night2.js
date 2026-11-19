@@ -7,7 +7,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly, outlined } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, paperGrain, globalKeys, hudButtons, canvasOnly, outlined, reviewerControls } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const GROUND = 655; // y of the street the dog runs on
@@ -133,6 +133,7 @@ export default class Night2 extends Phaser.Scene {
 
     this.buildHud();
     hudButtons(this, { pause: true, x: W - 150 }); // the centre is taken by the progress bar
+    reviewerControls(this);
     // start right away
     this.startIntro();
   }
@@ -340,7 +341,8 @@ export default class Night2 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
-    const dt = Math.min(delta / 1000, 0.05);
+    let dt = Math.min(delta / 1000, 0.05);
+    if (this.fastPlay) dt *= 2;
     this.t += dt;
 
     // speed control: one steady pace, only slowing when the dog stumbles or nears the gate
@@ -372,6 +374,13 @@ export default class Night2 extends Phaser.Scene {
       this.phase = 'gate';
     }
 
+    if (this.autoPlay && (this.phase === 'run' || this.phase === 'gate') && this.onGround) {
+      const threshold = this.fastPlay ? 420 : 300;
+      for (const o of this.obs) {
+        const dx = o.x - DOG_X;
+        if (dx > 0 && dx < threshold) { this.pressJump(); break; }
+      }
+    }
     this.updateDog(time, dt);
     this.updateDiya(time);
 

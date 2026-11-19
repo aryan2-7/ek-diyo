@@ -478,6 +478,56 @@ export function openPause(scene) {
   scene.scene.launch('Pause', { from: scene.scene.key });
 }
 
+/** Auto-play / fast-play toggles for reviewers. Only appears when "Unlock levels and playthrough" is on. */
+export function reviewerControls(scene) {
+  if (!settings.unlockAll) return;
+  scene.autoPlay = false;
+  scene.fastPlay = false;
+  if (!scene.setAutoPlay) {
+    scene.setAutoPlay = (v) => {
+      scene.autoPlay = v;
+      if (scene._autoLabel) scene._autoLabel.setText(`Auto: ${v ? 'On' : 'Off'}`).setColor(v ? CSS.marigold : CSS.indigo);
+    };
+  }
+  if (!scene.setFastPlay) {
+    scene.setFastPlay = (v) => {
+      scene.fastPlay = v;
+      const f = v ? 2 : 1;
+      scene.time.timeScale = f;
+      scene.tweens.timeScale = f;
+      if (scene.anims) scene.anims.timeScale = f;
+      if (scene._fastLabel) scene._fastLabel.setText(`Fast: ${v ? 'On' : 'Off'}`).setColor(v ? CSS.marigold : CSS.indigo);
+    };
+  }
+
+  const autoBtn = button(scene, 150, H - 72, 'Auto: Off', () => { Sfx.click(); scene.setAutoPlay(!scene.autoPlay); }, { w: 150, h: 46, size: 20, depth: 960 });
+  const fastBtn = button(scene, W - 150, H - 72, 'Fast: Off', () => { Sfx.click(); scene.setFastPlay(!scene.fastPlay); }, { w: 150, h: 46, size: 20, depth: 960 });
+  const autoLabel = autoBtn.list.find((o) => o.type === 'Text');
+  const fastLabel = fastBtn.list.find((o) => o.type === 'Text');
+  scene._autoLabel = autoLabel;
+  scene._fastLabel = fastLabel;
+  scene.setAutoPlay = (v) => {
+    scene.autoPlay = v;
+    if (autoLabel) {
+      autoLabel.setText(`Auto: ${v ? 'On' : 'Off'}`);
+      autoLabel.setColor(v ? CSS.marigold : CSS.indigo);
+    }
+  };
+  scene.setFastPlay = (v) => {
+    scene.fastPlay = v;
+    const f = v ? 2 : 1;
+    scene.time.timeScale = f;
+    scene.tweens.timeScale = f;
+    if (scene.anims) scene.anims.timeScale = f;
+    if (fastLabel) {
+      fastLabel.setText(`Fast: ${v ? 'On' : 'Off'}`);
+      fastLabel.setColor(v ? CSS.marigold : CSS.indigo);
+    }
+  };
+  scene.setAutoPlay(false);
+  scene.setFastPlay(false);
+}
+
 /** Freeze this scene and show the settings on top (works from the title and from the pause menu). */
 export function openSettings(scene) {
   if (scene._leaving || scene.scene.isPaused()) return;

@@ -7,7 +7,7 @@ import { Lighting } from '../systems/Lighting.js';
 import { Keeper } from '../systems/Keeper.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish, snap, stepNoise } from '../systems/Motion.js';
-import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, popText } from '../ui/ui.js';
+import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, popText, reviewerControls } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
 const DURATION = 55; // seconds until dusk is gone
@@ -76,6 +76,7 @@ export default class Night1 extends Phaser.Scene {
 
     this.buildHud();
     hudButtons(this, { pause: true });
+    reviewerControls(this);
     // how to play: the night begins only once the player says "Got it"
     this.k.enabled = false;
     instructions(this, { kicker: 'DAY 1  ·  NIGHT 1', title: NIGHTS[1].name, sub: NIGHTS[1].goal }, () => this.startLevel());
@@ -377,11 +378,28 @@ export default class Night1 extends Phaser.Scene {
 
   // ---------------------------------------------------------------- loop
   update(time, delta) {
-    const dt = Math.min(delta / 1000, 0.05);
+    let dt = Math.min(delta / 1000, 0.05);
+    if (this.fastPlay) dt *= 2;
     if (this.started && !this.over) this.t += dt;
     this.k.update(time, dt);
     this.updatePlates(dt, time);
     this.updateCrows(time);
+    if (this.autoPlay && this.started && !this.over) {
+      const plates = this.plates || [];
+      let target = null;
+      const idle = plates.filter((p) => p.state === 'idle');
+      if (idle.length) {
+        target = idle.reduce((a, b) => (Phaser.Math.Distance.Between(this.k.x, this.k.y, a.x, a.y) < Phaser.Math.Distance.Between(this.k.x, this.k.y, b.x, b.y) ? a : b));
+      } else if (this.nextGust < 2 && plates.some((p) => p.state === 'lit')) {
+        const lit = plates.filter((p) => p.state === 'lit');
+        target = lit.reduce((a, b) => (Phaser.Math.Distance.Between(this.k.x, this.k.y, a.x, a.y) < Phaser.Math.Distance.Between(this.k.x, this.k.y, b.x, b.y) ? a : b));
+      } else if (plates.length) {
+        const active = plates.filter((p) => p.state !== 'done');
+        const pool = active.length ? active : plates;
+        target = pool.reduce((a, b) => (Phaser.Math.Distance.Between(this.k.x, this.k.y, a.x, a.y) < Phaser.Math.Distance.Between(this.k.x, this.k.y, b.x, b.y) ? a : b));
+      }
+      if (target) this.k.target = { x: target.x, y: target.y };
+    }
     if (this.started && !this.over && this.t > 8) {
       this.nextGust -= dt;
       if (this.nextGust <= 0) {
