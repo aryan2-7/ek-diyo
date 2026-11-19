@@ -49,14 +49,15 @@ export default class SettingsScene extends Phaser.Scene {
     y += 66;
     label('Full screen at start');
     this.toggle(ctl, y, settings.fullscreen, (v) => (settings.fullscreen = v));
-    text(this, ctl + 140, y, 'next visit', { size: 20, color: CSS.vermilion, shadow: false, depth: 2, origin: [0, 0.5] });
+    text(this, ctl + 140, y, 'reload for changes to take effect', { size: 16, color: CSS.vermilion, bold: true, shadow: false, depth: 2, origin: [0, 0.5], wrap: 250 });
     y += 66;
     label('Reduce motion');
     this.toggle(ctl, y, settings.reduceMotion, (v) => (settings.reduceMotion = v));
     y += 66;
-    label('Open every night');
+    text(this, left, y, 'Unlock levels and playthrough', { size: 22, color: CSS.indigo, shadow: false, depth: 2, origin: [0, 0.5], wrap: 250 });
     this.toggle(ctl, y, settings.unlockAll, (v) => (settings.unlockAll = v));
-    text(this, ctl + 140, y, 'for reviewers', { size: 20, color: CSS.vermilion, shadow: false, depth: 2, origin: [0, 0.5] });
+    text(this, ctl + 140, y, 'reload for changes to take effect', { size: 16, color: CSS.vermilion, bold: true, shadow: false, depth: 2, origin: [0, 0.5], wrap: 250 });
+    y += 66;
 
     if (this.from === 'Title') {
       let armed = false;

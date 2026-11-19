@@ -1,11 +1,13 @@
 // Tiny save system: which nights are unlocked, best results, mute setting.
-const KEY = 'five-nights.v1';
+const KEY = 'ek-diyo.v1';
+const OLD_KEY = 'five-nights.v1';
 const defaults = { unlocked: 1, best: {}, muted: false };
 
 function load() {
   try {
+    const raw = localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY);
     // sound is always ON at the start of a visit (M mutes for the session), even if it was muted last time
-    return { ...defaults, ...JSON.parse(localStorage.getItem(KEY) || '{}'), muted: false };
+    return { ...defaults, ...JSON.parse(raw || '{}'), muted: false };
   } catch {
     return { ...defaults };
   }

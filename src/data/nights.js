@@ -81,8 +81,7 @@ export const NIGHTS = {
       art: 'card_hill',
       title: 'Govardhan Puja: the Hill of Food',
       body:
-        'On the fourth day families build a small hill of cow dung and offerings — the annakut, a "mountain of food" — and crown it with a lit lamp, walking around it in circles. It retells the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.\n\n' +
-        'For the Newar community it is also Mha Puja, the worship of the self, and Nepal Sambat, the Newari New Year. A quiet reminder: the one who carries the light deserves care too.',
+        'On the fourth day families build a small hill of cow dung and offerings, the annakut or mountain of food, and crown it with a lit lamp, walking around it in circles. It retells the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.',
       fact: 'Festival fact · Day 4 · Govardhan Puja',
     },
     next: 'Night5',

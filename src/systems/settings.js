@@ -1,6 +1,7 @@
 // Player settings (progress lives in state.js). Saved in localStorage; a few can be forced from the URL for testing.
 //   ?quality=low|high   force a quality level for this visit      ?unlock   open every night      ?lang=ne|en
-const KEY = 'five-nights.settings.v1';
+const KEY = 'ek-diyo.settings.v1';
+const OLD_KEY = 'five-nights.settings.v1';
 const defaults = { fullscreen: true, music: 0.6, sfx: 0.9, quality: 'high', reduceMotion: false, unlockAll: false, lang: 'en' };
 
 const params = new URLSearchParams(location.search);
@@ -13,7 +14,7 @@ export const override = {
 function load() {
   let saved = {};
   try {
-    saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    saved = JSON.parse((localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY)) || '{}');
   } catch {
     /* private mode etc. - settings just won't persist */
   }

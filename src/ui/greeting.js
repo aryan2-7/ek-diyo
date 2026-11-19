@@ -6,6 +6,11 @@ import { drawFlame } from './draw.js';
  * It is a small HTML overlay (real text boxes work much better than game text on phones) drawn onto a canvas.
  */
 export function openGreeting(scene) {
+  if (scene?.scale?.isFullscreen) {
+    scene.scale.stopFullscreen();
+    setTimeout(() => openGreeting(scene), 300);
+    return;
+  }
   if (document.getElementById('greet')) return;
   const root = document.createElement('div');
   root.id = 'greet';
@@ -153,5 +158,5 @@ function drawCard(canvas, scene, to, from) {
   if (from) ctx.fillText(`with love, ${from}`, W / 2, to ? 814 : 782);
   ctx.fillStyle = '#7a6a4a';
   ctx.font = '20px Kalam, cursive';
-  ctx.fillText('The Five Nights · a Tihar game', W / 2, 846);
+  ctx.fillText('Ek Diyo · a Tihar game', W / 2, 846);
 }

@@ -11,7 +11,7 @@ const weakDevice = () => {
 
 let autoLow = false;
 try {
-  autoLow = sessionStorage.getItem('five-nights.autolow') === '1';
+  autoLow = sessionStorage.getItem('ek-diyo.autolow') === '1' || sessionStorage.getItem('five-nights.autolow') === '1';
 } catch {
   /* ignore */
 }
@@ -37,7 +37,7 @@ export const Quality = {
     if (auto) {
       autoLow = true;
       try {
-        sessionStorage.setItem('five-nights.autolow', '1');
+        sessionStorage.setItem('ek-diyo.autolow', '1');
       } catch {
         /* ignore */
       }

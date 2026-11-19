@@ -303,8 +303,10 @@ export default class Night3 extends Phaser.Scene {
     const spr = this.add.image(x, y, 'mala_outlined').setDepth(y);
     spr.setScale(104 / (spr.width - pad * 2)).setAlpha(0);
     this.tweens.add({ targets: spr, alpha: 1, duration: 500 });
-    const glow = this.add.image(x, y - 10, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setDepth(y - 1).setScale(1.5).setAlpha(0.6);
-    const mark = this.add.image(x, y - 78, 'star').setDepth(y + 1).setScale(0.55);
+    const glow = this.add.image(x, y - 10, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setDepth(y - 1).setScale(2.6).setAlpha(0.85);
+    this.tweens.add({ targets: glow, alpha: 0.5, scale: 2.2, yoyo: true, repeat: -1, duration: 600 });
+    const mark = this.add.image(x, y - 78, 'star').setDepth(y + 1).setScale(0.85);
+    this.tweens.add({ targets: mark, scale: 1.05, yoyo: true, repeat: -1, duration: 450 });
     this.items.push({ x, y, spr, glow, mark });
     this.say('A marigold garland! Carry it to the cow.');
   }
@@ -468,8 +470,8 @@ export default class Night3 extends Phaser.Scene {
     this.makeFootprint();
     const TOTAL = 10;
     const steps = 6 + burning; // every lamp that is lit carries her one step further
-    const START = 700;
-    const GAP = 250;
+    const START = 900;
+    const GAP = 400;
     for (let i = 0; i < steps; i++) {
       const u = i / (TOTAL - 1);
       const y = lerp(690, 396, u);

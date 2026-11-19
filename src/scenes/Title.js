@@ -54,7 +54,7 @@ export default class Title extends Phaser.Scene {
     parallax(this, [{ obj: this.bg, amt: 12 }, { obj: this.keeper, amt: -7 }]);
 
     // title (raised a little so it clears the stupa spire and the pagoda finial). The small line sits on paper so it is easy to read.
-    const t1 = titleText(this, W / 2, 118, 'The Five Nights', { size: 94, color: CSS.cream, depth: 30 });
+    const t1 = titleText(this, W / 2, 118, 'Ek Diyo', { size: 94, color: CSS.cream, depth: 30 });
     const t2 = text(this, W / 2, 214, 'one diya, five days', { size: 38, color: CSS.turmeric, depth: 30, bold: true });
     const t3 = labelPill(this, W / 2, 268, 'तिहार  ·  a Tihar story', { size: 26, depth: 30 }).container;
     [t1, t2, t3].forEach((t, i) => {
@@ -70,7 +70,7 @@ export default class Title extends Phaser.Scene {
       Sfx.startAmbient();
       go(this, 'StoryCard', { night: 0, card: PROLOGUE, stats: [], next: 'Night1', wicksBefore: 0 });
     };
-    this.play = button(this, 1020, 630, state.unlocked > 1 ? 'Begin again' : 'Begin', begin, { w: 300, h: 68, size: 34 });
+    this.play = button(this, 1020, 650, state.unlocked > 1 ? 'Begin again' : 'Begin', begin, { w: 300, h: 68, size: 34 });
     this.input.keyboard.on('keydown-ENTER', begin);
     this.input.keyboard.on('keydown-SPACE', begin);
 
@@ -83,39 +83,44 @@ export default class Title extends Phaser.Scene {
       if (this.unlockSeen !== settings.unlockAll) this.buildNights();
     });
 
-    // keyboard hints only where there is a keyboard
-    this.hint = this.sys.game.device.os.desktop
-      ? labelPill(this, W - 16, H - 12, 'Enter: begin  ·  F: full screen  ·  M: sound', {
-        size: 20, anchor: [1, 1], depth: 30, bold: false, fit: ['F or Esc: leave full screen  ·  M: sound'],
-      })
-      : null;
+    // keyboard hints removed (shown in the start prompt instead)
+    this.hint = null;
     this.hintShown = '';
     paperGrain(this, 0.1);
 
-    if (!entered) entered = true;
+    if (!entered) this.openGate();
   }
 
-  /** The first screen: one tap unlocks sound and full screen (browsers do not allow either without it), and the music starts at once. */
+  /** The first screen: shows the key hints, then "Got it" puts the player in full screen and starts the game. */
   openGate() {
     this.gateUp = true;
-    const veil = this.add.rectangle(0, 0, W, H, COLORS.soot, 0.55).setOrigin(0).setDepth(2000).setInteractive();
-    const pill = labelPill(this, W / 2, 352, 'Tap or press any key to begin', { size: 38, depth: 2001 }).container;
-    const sub = text(this, W / 2, 424, 'sound on  ·  full screen  ·  best with headphones', { size: 26, color: CSS.cream, depth: 2001 });
-    this.tweens.add({ targets: pill, scale: 1.04, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.easeInOut' });
+    const veil = this.add.rectangle(0, 0, W, H, COLORS.soot, 0.6).setOrigin(0).setDepth(2000).setInteractive();
+    const pw = 620, ph = 260;
+    const g = this.add.graphics().setDepth(2001);
+    g.fillStyle(COLORS.cream, 1).fillRoundedRect(W / 2 - pw / 2, H / 2 - ph / 2, pw, ph, 16);
+    g.lineStyle(4, COLORS.indigo, 1).strokeRoundedRect(W / 2 - pw / 2, H / 2 - ph / 2, pw, ph, 16);
+    const title = text(this, W / 2, H / 2 - 86, 'How to play', { size: 34, color: CSS.indigo, bold: true, shadow: false, depth: 2002 });
+    const info = text(this, W / 2, H / 2 - 20, 'F: full screen  ·  Esc: settings  ·  M: sound\nP: pause in a level  ·  Enter: begin', { size: 24, color: CSS.soot, shadow: false, depth: 2002, spacing: 6, wrap: 560 });
+    const btn = button(this, W / 2, H / 2 + 78, 'Got it', () => done(), { w: 220, h: 56, size: 28, depth: 2002 });
     const done = () => {
       if (!this.gateUp) return;
       this.gateUp = false;
       entered = true;
-      this.lockUntil = this.time.now + 450; // the key that opened the gate must not also press Begin
+      this.lockUntil = this.time.now + 450;
       this.input.keyboard.off('keydown', done);
       Sfx.unlock();
       Sfx.startAmbient();
+      if (settings.fullscreen && this.scale.fullscreen.available && !this.scale.isFullscreen) {
+        this.scale.startFullscreen();
+        setTimeout(() => {
+          try { screen.orientation?.lock?.('landscape')?.catch?.(() => {}); } catch { /* not allowed */ }
+        }, 400);
+      }
       this.tweens.add({
-        targets: [veil, pill, sub], alpha: 0, duration: 450,
-        onComplete: () => [veil, pill, sub].forEach((o) => o.destroy()),
+        targets: [veil, g, title, info, btn], alpha: 0, duration: 400,
+        onComplete: () => { veil.destroy(); g.destroy(); title.destroy(); info.destroy(); btn.destroy(); },
       });
     };
-    veil.on('pointerup', done);
     this.input.keyboard.on('keydown', done);
   }
 
@@ -130,11 +135,11 @@ export default class Title extends Phaser.Scene {
     for (let n = 1; n <= 5; n++) {
       const x = 80 + (n - 1) * 78;
       const open = n <= IMPLEMENTED && (settings.unlockAll || n <= state.unlocked);
-      const d = keep(this.add.image(x, 632, 'diya').setDepth(30));
+      const d = keep(this.add.image(x, 652, 'diya').setDepth(30));
       d.setScale(56 / d.width).setAlpha(open ? 1 : 0.3);
-      keep(text(this, x, 668, String(n), { size: 22, color: open ? CSS.turmeric : CSS.cream, depth: 30, bold: true }).setAlpha(open ? 1 : 0.45));
+      keep(text(this, x, 688, String(n), { size: 22, color: open ? CSS.turmeric : CSS.cream, depth: 30, bold: true }).setAlpha(open ? 1 : 0.45));
       const r = rating(n);
-      if (r) for (let k = 0; k < 3; k++) keep(this.add.image(x + (k - 1) * 17, 598, 'star').setScale(0.36).setDepth(30).setAlpha(k < r ? 1 : 0.22));
+      if (r) for (let k = 0; k < 3; k++) keep(this.add.image(x + (k - 1) * 17, 618, 'star').setScale(0.36).setDepth(30).setAlpha(k < r ? 1 : 0.22));
       if (open) {
         d.setInteractive({ useHandCursor: true });
         d.on('pointerover', () => {

@@ -187,7 +187,7 @@ export default class Night5 extends Phaser.Scene {
       this.slipDots.push(this.add.circle(W - 18 - 250 + 126 + i * 28, 46, 9, COLORS.vermilion, 1).setDepth(905).setStrokeStyle(2, COLORS.soot, 0.7));
     }
     const bgPill = this.add.graphics().setDepth(905);
-    tornPaper(bgPill, W / 2 - 250, 86, 500, 46, { seed: 31, amp: 1.6 });
+    tornPaper(bgPill, W / 2 - 280, 86, 560, 46, { seed: 31, amp: 1.6 });
     this.status = text(this, W / 2, 109, '', { size: 26, color: CSS.indigo, shadow: false, depth: 906 });
     this.statusPill = bgPill;
     bgPill.setAlpha(0);
@@ -274,7 +274,14 @@ export default class Night5 extends Phaser.Scene {
     this.setStatus(last ? 'One last colour…' : 'Beautiful. Another colour…');
     this.tweens.add({ targets: this.yamuna, y: YAMUNA.y - 12, yoyo: true, duration: 240 });
     if (last) this.time.delayedCall(1100, () => this.tikaClose());
-    else if (this.round === 4 && !this.tasks.fruit) this.time.delayedCall(1300, () => this.startTask('fruit'));
+    else if (this.round === 4 && !this.tasks.fruit) {
+      if (this.mistakes === 0) {
+        const msgPill = labelPill(this, W - 16, 76, 'Doing well? Try a wrong colour to see what happens.', { size: 20, depth: 906, anchor: [1, 0.5], fit: ['Doing well? Try a wrong colour to see what happens.'] });
+        msgPill.label.setColor(CSS.indigo);
+        this.time.delayedCall(6000, () => this.tweens.add({ targets: msgPill.container, alpha: 0, duration: 500, onComplete: () => msgPill.container.destroy() }));
+      }
+      this.time.delayedCall(1300, () => this.startTask('fruit'));
+    }
     else this.time.delayedCall(1500, () => this.newRound());
   }
 
@@ -311,10 +318,12 @@ export default class Night5 extends Phaser.Scene {
     item.setPosition(home.x, home.y).setAlpha(0);
     item._home = home;
     this.tweens.add({ targets: item, alpha: 1, duration: 500 });
-    this.setStatus(kind === 'garland' ? 'Drag the garland to your brother' : 'Offer Yama the dry fruits');
+    this.setStatus(kind === 'garland' ? 'Drag the garland to your brother (Space)' : 'Offer Yama the dry fruits (drag or Space)');
     const z = this.zone(kind);
     this.taskRing = this.add.image(z.x, z.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.4).setAlpha(0.4).setDepth(305);
     this.tweens.add({ targets: this.taskRing, alpha: 0.75, scale: 2.9, yoyo: true, repeat: -1, duration: 700 });
+    this.taskGlow = this.add.image(home.x, home.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(2.6).setAlpha(0.8).setDepth(item.depth - 1);
+    this.tweens.add({ targets: this.taskGlow, alpha: 0.45, scale: 2.2, yoyo: true, repeat: -1, duration: 600 });
     this.bob = this.tweens.add({ targets: item, y: home.y - 8, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.easeInOut' });
     item.setInteractive({ draggable: true, useHandCursor: true });
     this.input.setDraggable(item);
@@ -322,12 +331,15 @@ export default class Night5 extends Phaser.Scene {
     item.removeAllListeners('dragstart');
     item.removeAllListeners('dragend');
     item.on('dragstart', () => this.bob?.stop());
-    item.on('drag', (p, x, y) => item.setPosition(x, y));
+    item.on('drag', (p, x, y) => { item.setPosition(x, y); this.taskGlow?.setPosition(x, y); });
     item.on('dragend', () => {
       if (this.phase !== 'task') return;
       const zz = this.zone(kind);
       if (Math.hypot(item.x - zz.x, (item.y - zz.y) * 1.1) < zz.r) this.taskDone(kind);
-      else this.tweens.add({ targets: item, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
+      else {
+        this.tweens.add({ targets: item, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: this.taskGlow, x: home.x, y: home.y, duration: 350, ease: 'Back.easeOut' });
+      }
     });
     Sfx.chime();
     this.time.delayedCall(9000, () => this.phase === 'task' && this.setStatus('…or press Space'));
@@ -344,6 +356,8 @@ export default class Night5 extends Phaser.Scene {
     this.hideHints();
     this.bob?.stop();
     this.taskRing?.destroy();
+    this.taskGlow?.destroy();
+    this.taskGlow = null;
     this.tasks[kind] = true;
     const item = kind === 'garland' ? this.garland : this.plate;
     item.disableInteractive();

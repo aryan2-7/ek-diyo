@@ -67,9 +67,9 @@ export default class Ending extends Phaser.Scene {
     const at = lit + 2000;
     const make = (y, label, fn) => {
       const b = button(this, 1110, y, label, fn, { w: 250, h: 54, size: 24 });
-      b.setAlpha(0);
+      b.setAlpha(0).setVisible(false);
       b.input.enabled = false;
-      this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: at, onComplete: () => (b.input.enabled = true) });
+      this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: at, onStart: () => b.setVisible(true), onComplete: () => (b.input.enabled = true) });
       return b;
     };
     const btns = [

@@ -98,23 +98,7 @@ async function start() {
   document.getElementById('boot')?.remove();
   Render.watch(game);
 
-  // Full screen on the very first tap or key press (browsers only allow it after a gesture). F or Esc leaves it.
-  if (settings.fullscreen) {
-    const enter = (e) => {
-      if (e.type === 'keydown' && e.key === 'Escape') return;
-      ['pointerup', 'keydown', 'touchend'].forEach((t) => window.removeEventListener(t, enter, true));
-      if (!game.scale.fullscreen.available || game.scale.isFullscreen) return;
-      game.scale.startFullscreen();
-      setTimeout(() => {
-        try {
-          screen.orientation?.lock?.('landscape')?.catch?.(() => {});
-        } catch {
-          /* not allowed here */
-        }
-      }, 400);
-    };
-    ['pointerup', 'keydown', 'touchend'].forEach((t) => window.addEventListener(t, enter, true));
-  }
+  // Full screen is handled on the title screen only, so it does not spam on every page.
 
   if (new URLSearchParams(location.search).has('debug')) {
     window.__game = game;

@@ -91,12 +91,7 @@ export default class Night4 extends Phaser.Scene {
     this.guide = this.add.graphics().setDepth(600);
     this.rope = this.add.graphics().setDepth(539);
 
-    // the Keeper watches from the left of the courtyard with his four wicks, and cheers when the hill stands steady
-    this.keeper = this.add.image(112, 712, 'keeper').setOrigin(0.5, 1).setDepth(520);
-    this.keeperScale = 250 / this.keeper.height;
-    this.keeper.setScale(this.keeperScale);
-    this.kFlame = new FlameCluster(this, 4, { size: 37, depth: 521 });
-    this.kLight = this.light.add({ x: 120, y: 600, radius: 240, flicker: 0.05 });
+    // (the Keeper no longer stands in the corner)
 
     this.petals = this.add
       .particles(0, 0, 'petal', {
@@ -227,7 +222,6 @@ export default class Night4 extends Phaser.Scene {
       Sfx.perfect();
       this.petals.explode(8, wx, landY - 24);
       popText(this, wx, landY - 70, this.streak > 1 ? `Steady ×${this.streak}` : 'Steady!');
-      this.cheer();
     } else {
       this.streak = 0;
       this.lean += (wx - topX) * LEAN_PER_PX;
@@ -267,7 +261,6 @@ export default class Night4 extends Phaser.Scene {
   splat(dx) {
     this.miss++;
     this.streak = 0;
-    this.flinch();
     const spr = this.item;
     this.item = null;
     const side = Math.sign(dx) || 1;
@@ -297,7 +290,6 @@ export default class Night4 extends Phaser.Scene {
     });
     this.lean *= 0.28;
     this.streak = 0;
-    this.flinch();
     Sfx.slide();
     Sfx.fail();
     this.say.setText('Too steep — the top slid off!');
@@ -395,7 +387,6 @@ export default class Night4 extends Phaser.Scene {
     this.drawGuide();
     this.drawRope();
     this.flame?.update?.(time);
-    this.updateKeeper(time);
     this.updateWalkers(dt);
 
     const k = Math.min(1, this.t / DURATION);

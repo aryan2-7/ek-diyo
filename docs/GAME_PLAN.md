@@ -1,4 +1,4 @@
-# The Five Nights — Game Plan, Assets & Prompts (v2)
+# Ek Diyo — Game Plan, Assets & Prompts (v2)
 
 KUCC Tihar–Chhath Web UI Contest · Advanced track · register by Nov 8, submit by Nov 19
 

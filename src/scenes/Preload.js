@@ -13,7 +13,7 @@ export default class Preload extends Phaser.Scene {
 
   preload() {
     this.cameras.main.setBackgroundColor(CSS.soot);
-    this.add.text(W / 2, H / 2 - 50, 'The Five Nights', { fontFamily: FONT_TITLE, fontSize: '68px', color: CSS.cream }).setOrigin(0.5).setResolution(2);
+    this.add.text(W / 2, H / 2 - 50, 'Ek Diyo', { fontFamily: FONT_TITLE, fontSize: '68px', color: CSS.cream }).setOrigin(0.5).setResolution(2);
     this.add.text(W / 2, H / 2 + 10, 'lighting the diya…', { fontFamily: FONT_HAND, fontSize: '26px', color: CSS.turmeric }).setOrigin(0.5).setResolution(2);
     const bw = 420;
     this.add.rectangle(W / 2, H / 2 + 62, bw, 10, COLORS.indigo).setOrigin(0.5);

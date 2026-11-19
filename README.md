@@ -1,4 +1,4 @@
-# The Five Nights: one diya, five days
+# Ek Diyo: one diya, five days
 
 A paper-cut browser game about **Tihar**, the Nepali festival of lights. You carry one diya
 through the five days of the festival. Every night one more wick joins the flame, one more voice
@@ -26,7 +26,7 @@ About 10 minutes start to finish. Runs in any modern browser, desktop or phone (
 | Anywhere | `P` or `Esc` pause (in full screen the browser keeps Esc: use `P`), `M` sound, `F` full screen. In menus: arrow keys or W / S, Enter | Icons at the top |
 
 Settings (gear icon on the title, or in the pause menu): music and effects volume, picture quality,
-reduce motion, full screen at start, **Open every night** for reviewers who want to jump around, and **Reset saved progress** (from the title).
+reduce motion, full screen at start, **Unlock levels and playthrough** (auto-play and fast-play in every level), and **Reset saved progress** (from the title).
 
 ## Run it
 

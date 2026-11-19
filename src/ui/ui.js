@@ -96,14 +96,9 @@ export function focusMenu(scene, buttons, { start = 0, readyAt = 0 } = {}) {
   let i = start;
   const ring = scene.add.graphics().setDepth(999).setAlpha(0);
   const tick = (time) => {
-    const on = scene.time.now >= readyAt;
+    // no hover box (removed)
     ring.clear();
-    ring.setAlpha(on ? 0.65 + 0.35 * Math.sin(time * 0.006) : 0);
-    if (!on) return;
-    const b = buttons[i];
-    const w = b.width * b.scaleX;
-    const h = b.height * b.scaleY;
-    ring.lineStyle(5, COLORS.turmeric, 1).strokeRoundedRect(b.x - w / 2 - 3, b.y - h / 2 - 3, w + 6, h + 6, 12);
+    ring.setAlpha(0);
   };
   scene.events.on('update', tick);
   scene.events.once('shutdown', () => scene.events.off('update', tick));
@@ -372,10 +367,29 @@ export function toggleFullscreen(scene) {
   }, 400);
 }
 
-/** Wire up the M (mute) and F (fullscreen) keys in any scene. */
+/** Wire up the M (mute), F (fullscreen) and Esc (settings) keys in any scene. */
 export function globalKeys(scene) {
   scene.input.keyboard.on('keydown-M', () => Sfx.toggleMute());
   scene.input.keyboard.on('keydown-F', () => toggleFullscreen(scene));
+  let escPending = false;
+  scene.input.keyboard.on('keydown-ESC', () => {
+    escPending = true;
+    setTimeout(() => (escPending = false), 600);
+    if (scene.scale.isFullscreen) {
+      scene.scale.stopFullscreen();
+    } else {
+      openSettings(scene);
+    }
+  });
+  // when Esc exits fullscreen, follow up by opening settings
+  const onFsChange = () => {
+    if (!scene.scale.isFullscreen && escPending) {
+      escPending = false;
+      setTimeout(() => openSettings(scene), 150);
+    }
+  };
+  scene.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, onFsChange);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.scale.off(Phaser.Scale.Events.LEAVE_FULLSCREEN, onFsChange));
 }
 
 /** Wrap a scene-level pointer handler so it ignores taps that landed on a button or HUD icon. */
@@ -410,18 +424,18 @@ export function hudButtons(scene, { pause = false, settings: withSettings = fals
   const drawSpeaker = (icon) => {
     icon.clear();
     icon.fillStyle(COLORS.indigo, 1);
-    icon.fillPoints([{ x: -11, y: -5 }, { x: -5, y: -5 }, { x: 3, y: -12 }, { x: 3, y: 12 }, { x: -5, y: 5 }, { x: -11, y: 5 }], true);
+    icon.fillPoints([{ x: -15, y: -5 }, { x: -9, y: -5 }, { x: -1, y: -12 }, { x: -1, y: 12 }, { x: -9, y: 5 }, { x: -15, y: 5 }], true);
     icon.lineStyle(3, COLORS.indigo, 1);
     if (Sfx.muted) {
       icon.lineStyle(3.5, COLORS.vermilion, 1);
-      icon.lineBetween(8, -8, 18, 8);
-      icon.lineBetween(18, -8, 8, 8);
+      icon.lineBetween(4, -8, 14, 8);
+      icon.lineBetween(14, -8, 4, 8);
     } else {
       icon.beginPath();
-      icon.arc(5, 0, 8, -0.9, 0.9);
+      icon.arc(1, 0, 8, -0.9, 0.9);
       icon.strokePath();
       icon.beginPath();
-      icon.arc(5, 0, 14, -0.9, 0.9);
+      icon.arc(1, 0, 14, -0.9, 0.9);
       icon.strokePath();
     }
   };
@@ -447,7 +461,6 @@ export function hudButtons(scene, { pause = false, settings: withSettings = fals
       icon.fillRoundedRect(-9, -11, 6, 22, 2);
       icon.fillRoundedRect(3, -11, 6, 22, 2);
     }, () => openPause(scene));
-    scene.input.keyboard.on('keydown-ESC', () => openPause(scene));
     scene.input.keyboard.on('keydown-P', () => openPause(scene));
   }
   let slot = 1;
@@ -543,5 +556,8 @@ export function loseScreen(scene, title, line, { size = 64 } = {}) {
   if (line) text(scene, W / 2, 316, line, { size: 26, color: CSS.turmeric, depth: 950 });
   const again = button(scene, W / 2, 410, 'Try again', () => scene.scene.restart(), { w: 300, h: 64, size: 30 });
   const back = button(scene, W / 2, 490, 'Back to the start', () => go(scene, 'Title'), { w: 300, h: 56, size: 24 });
+  again.input.enabled = false;
+  back.input.enabled = false;
+  scene.time.delayedCall(700, () => { again.input.enabled = true; back.input.enabled = true; });
   focusMenu(scene, [again, back], { readyAt: scene.time.now + 700 }); // Enter / Space retries, after a short pause
 }

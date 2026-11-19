@@ -207,10 +207,16 @@ export class FlameCluster {
     this.scene = scene;
     this.size = size;
     this.spread = spread;
+    this.depth = depth;
     this.x = 0;
     this.y = 0;
     this.flames = [];
-    for (let i = 0; i < count; i++) this.flames.push(new Flame(scene, 0, 0, { size: i === 0 ? size : size * 0.82, depth, glow }));
+    this.wicks = [];
+    for (let i = 0; i < count; i++) {
+      this.flames.push(new Flame(scene, 0, 0, { size: i === 0 ? size : size * 0.82, depth, glow }));
+      const wick = scene.add.image(0, 0, 'wick').setOrigin(0.5, 1).setDepth(depth - 1);
+      this.wicks.push(wick);
+    }
   }
 
   offset(i) {
@@ -233,17 +239,26 @@ export class FlameCluster {
 
   setVisible(v) {
     this.flames.forEach((f) => f.setVisible(v));
+    this.wicks.forEach((w) => w.setVisible(v));
   }
 
   update(t) {
     this.flames.forEach((f, i) => {
       const o = this.offset(i);
-      f.setPosition(this.x + o.x, this.y + o.y);
+      const fx = this.x + o.x;
+      const fy = this.y + o.y;
+      f.setPosition(fx, fy);
       f.update(t);
+      const w = this.wicks[i];
+      if (w) {
+        const s = i === 0 ? this.size : this.size * 0.82;
+        w.setPosition(fx, fy).setScale(s * 0.015).setDepth(this.depth - 1);
+      }
     });
   }
 
   destroy() {
     this.flames.forEach((f) => f.destroy());
+    this.wicks.forEach((w) => w.destroy());
   }
 }

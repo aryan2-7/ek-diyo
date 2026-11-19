@@ -22,9 +22,9 @@ export default class CreditsScene extends Phaser.Scene {
     titleText(this, W / 2, H / 2 - 308, 'Credits', { size: 44, color: CSS.indigo, shadow: false, depth: 2 });
     let y = H / 2 - 262;
     CREDITS.slice(1).forEach((c) => {
-      text(this, W / 2, y, c.h, { size: 19, color: CSS.vermilion, bold: true, shadow: false, depth: 2 });
-      const t = text(this, W / 2, y + 11, c.t, { size: 21, color: CSS.soot, shadow: false, depth: 2, wrap: 720, origin: [0.5, 0], spacing: 2 });
-      y += 22 + t.height + 8;
+      text(this, W / 2, y, c.h, { size: 24, color: CSS.vermilion, bold: true, shadow: false, depth: 2 });
+      const t = text(this, W / 2, y + 13, c.t, { size: 26, color: CSS.soot, shadow: false, depth: 2, wrap: 720, origin: [0.5, 0], spacing: 3 });
+      y += 26 + t.height + 10;
     });
     button(this, W / 2, H / 2 + 318, 'Close', () => this.close(), { w: 220, h: 54, size: 26, depth: 3 });
     this.input.keyboard.on('keydown-ESC', () => this.close());

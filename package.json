@@ -1,7 +1,7 @@
 {
-  "name": "the-five-nights",
+  "name": "ek-diyo",
   "version": "0.1.0",
-  "description": "The Five Nights: one diya, five days. A paper-cut Tihar game for the KUCC Tihar-Chhath Web UI Contest 2026.",
+  "description": "Ek Diyo: one diya, five days. A paper-cut Tihar game for the KUCC Tihar-Chhath Web UI Contest 2026.",
   "private": true,
   "type": "module",
   "scripts": {

@@ -316,9 +316,12 @@ export const Sfx = {
         ambientOn = false;
         Music.stop();
       }
-    } else if (!muted && ctx.state === 'running' && !ambientOn) {
-      ambientOn = true;
-      Music.start();
+    } else if (!muted && !ambientOn) {
+      if (ctx.state !== 'running') this.unlock();
+      if (ctx.state === 'running') {
+        ambientOn = true;
+        Music.start();
+      }
     }
   },
   /** How many of the five score layers play (the wicks: 1 = drone only, 5 = everything). */

@@ -315,6 +315,11 @@ export default class Night2 extends Phaser.Scene {
   /** The final wave of garlands (no obstacles). Once it has gone by, the gate appears. */
   spawnFinale(n) {
     const x0 = W + 150;
+    // one last really hard jump: a tall pot right before the wave of garlands
+    const def = OBSTACLES.pots;
+    const spr = this.add.image(x0 - 120, GROUND + 6, def.key).setOrigin(0.5, 1).setDepth(GROUND + 5);
+    spr.setScale(def.h / spr.height);
+    this.obs.push({ spr, def, x: x0 - 120 });
     for (let i = 0; i < n; i++) this.addGarland(x0 + i * 170, GROUND - 120 - Math.sin((n > 1 ? i / (n - 1) : 0.5) * Math.PI) * 170);
     this.finale = true;
     this.nextSpawn = Infinity;
