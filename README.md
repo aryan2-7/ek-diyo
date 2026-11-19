@@ -5,14 +5,14 @@ through the five days of the festival. Every night one more wick joins the flame
 joins the music, and the diya's light is the only way to see.
 
 Made for the **KUCC Tihar-Chhath Web UI Contest 2026** (Kathmandu University Computer Club).
-About 10 minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
+Less than 10 minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
 
 | Night | Festival day | What you do |
 |------:|--------------|-------------|
 | 1 | Kaag Tihar (crows) | Light offering plates on the rooftop and feed ten crows before dusk fades. Gusts blow plates out unless you shield them; a golden crow counts double |
-| 2 | Kukur Tihar (dogs) | Run the street as the guard dog: jump the pots, gather the 67 marigold garlands, reach the gate |
+| 2 | Kukur Tihar (dogs) | Run the street as the guard dog: jump the pots, gather the marigold garlands, reach the gate |
 | 3 | Gai Tihar & Laxmi Puja | Keep four lamps burning until midnight (stand beside one to refill and shield it), garland the cow. Laxmi's golden footprints walk as far as your lamps lit the way |
-| 4 | Govardhan Puja | Stack the annakut hill of offerings from a swinging rope and crown it with the maha-deep; the family walks round it with lamps |
+| 4 | Govardhan Puja | Stack the annakut hill of offerings from a swinging rope and crown it with the maha-deep |
 | 5 | Bhai Tika | Garland your brother, offer Yama dry fruits, repeat Yamuna's colours, then swipe down his forehead to lay the tika (a yellow bar with six blossoms of colour) |
 
 ## Controls
@@ -23,7 +23,7 @@ About 10 minutes start to finish. Runs in any modern browser, desktop or phone (
 | Night 2 (run) | Space / W / Up, or click. Hold for a higher jump | Tap anywhere |
 | Night 4 (annakut stacking) | Click / tap / Space to drop the swinging offering | Tap to drop |
 | Night 5 (ritual) | Drag the garland and the plate (Space does it for you); click a powder or press 1 to 7; swipe down the forehead (or hold Space / the down arrow) | Drag, tap, swipe |
-| Anywhere | `P` or `Esc` pause (in full screen the browser keeps Esc: use `P`), `M` sound, `F` full screen. In menus: arrow keys or W / S, Enter | Icons at the top |
+| Anywhere | `P` pause, `Esc` settings (in full screen the browser keeps Esc: use `P` for pause), `M` sound, `F` full screen. In menus: arrow keys or W / S, Enter | Icons at the top |
 
 Settings (gear icon on the title, or in the pause menu): music and effects volume, picture quality,
 reduce motion, full screen at start, **Unlock levels and playthrough** (auto-play and fast-play in every level), and **Reset saved progress** (from the title).
