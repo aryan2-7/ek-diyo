@@ -21,7 +21,7 @@ export const NIGHTS = {
     day: 'Day 1',
     name: 'Kaag Tihar',
     who: 'the Crow',
-    goal: 'Light the offerings. Feed ten crows before dusk fades.',
+    goal: 'Light the offerings. Feed five crows before dusk fades.',
     bg: 'bg_n1',
     card: {
       art: 'crow_perched',

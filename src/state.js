@@ -68,7 +68,7 @@ export function rating(n) {
   if (!b) return 0;
   const by = (v, hi, mid) => (v >= hi ? 3 : v >= mid ? 2 : 1);
   switch (n) {
-    case 1: return b.spare === undefined ? 1 : by(b.spare, 45, 20); // dusk to spare
+    case 1: return b.spare === undefined ? 1 : by(b.spare, 12, 6); // dusk to spare (of 32 s)
     case 2: return b.pct === undefined ? 1 : by(b.pct, 80, 50); // share of garlands gathered
     case 3: return b.sparks === undefined ? 1 : by(b.sparks, 4, 2);
     case 4: return b.splats === undefined ? 1 : b.splats === 0 ? 3 : b.splats <= 2 ? 2 : 1;

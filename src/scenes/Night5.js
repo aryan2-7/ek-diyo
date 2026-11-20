@@ -10,10 +10,11 @@ import { finish, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, reviewerControls, labelPill } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-const ROUNDS = [1, 2, 3, 4, 5, 6]; // colours Yamuna shows in each of the six rounds: every round lays one blossom of the tika
+const ROUNDS = [1, 2, 3, 4]; // colours Yamuna shows in each of the four rounds; the rounds lay the six blossoms of the tika between them
 const MAX_MISTAKES = 3; // three slips and Yama arrives
-const TIME_LIMIT = 120; // seconds before Yama reaches the door of the room anyway
-const TASK_BONUS = 14; // seconds Yama is pushed back each time a ritual task is done
+const TIME_LIMIT = 70; // seconds before Yama reaches the door of the room anyway
+const TASK_BONUS = 10; // seconds Yama is pushed back each time a ritual task is done
+const FRUIT_AFTER = 2; // the dry fruits for Yama come after this many rounds
 const STEP = 620; // ms between the colours Yamuna points to
 const TAP_RADIUS = 70; // px; piles are ~77 px apart, so a fingertip rarely misses
 const INPUT_DELAY = 380; // ms after the last colour flashes before you can start tapping (the flash itself lasts ~500)
@@ -51,6 +52,9 @@ function tikaBar(g, cx, top, w, h) {
   g.fillStyle(0xf6e24a, 1).fillRoundedRect(cx - w / 2, top, w, h, w * 0.22);
   g.fillStyle(0xfff59a, 0.85).fillRoundedRect(cx - w * 0.3, top + 3, w * 0.2, Math.max(2, h - 6), w * 0.1);
 }
+
+/** How many of the six blossoms are laid on the small forehead tika after `done` rounds. */
+const blossomsFor = (done) => Math.round((done * TIKA.length) / ROUNDS.length);
 
 const THALI = { x: 640, y: 584, w: 430 };
 const KEEPER = { x: 318, y: 724, h: 520 };
@@ -175,8 +179,8 @@ export default class Night5 extends Phaser.Scene {
 
   buildHud() {
     const g = this.add.graphics().setDepth(900);
-    tornPaper(g, 18, 16, 6 * 34 + 36, 58, { seed: 23, amp: 2 });
-    this.roundDots = TIKA.map((c, i) =>
+    tornPaper(g, 18, 16, ROUNDS.length * 34 + 36, 58, { seed: 23, amp: 2 });
+    this.roundDots = TIKA.slice(0, ROUNDS.length).map((c, i) =>
       this.add.circle(18 + 36 + i * 34, 46, 10, c, 1).setDepth(905).setAlpha(0.25).setStrokeStyle(2, COLORS.soot, 0.7),
     );
     // how many slips are left
@@ -269,14 +273,15 @@ export default class Night5 extends Phaser.Scene {
     this.tweens.add({ targets: this.roundDots[this.round], scale: 1.5, yoyo: true, duration: 220 });
     this.round++;
     const last = this.round >= ROUNDS.length;
-    this.drawStripes(last ? this.round - 1 : this.round); // the last colour is laid in the close-up
+    this.drawStripes(blossomsFor(last ? this.round - 1 : this.round)); // the rest are laid in the close-up
     Sfx.chime();
     this.setStatus(last ? 'One last colour…' : 'Beautiful. Another colour…');
     this.tweens.add({ targets: this.yamuna, y: YAMUNA.y - 12, yoyo: true, duration: 240 });
     if (last) this.time.delayedCall(1100, () => this.tikaClose());
-    else if (this.round === 4 && !this.tasks.fruit) {
+    else if (this.round === FRUIT_AFTER && !this.tasks.fruit) {
       if (this.mistakes === 0) {
-        const msgPill = labelPill(this, W - 16, 76, 'Doing well? Try a wrong colour to see what happens.', { size: 20, depth: 906, anchor: [1, 0.5], fit: ['Doing well? Try a wrong colour to see what happens.'] });
+        // centred under the status banner: at the top right it sat on top of Yama's mistake counter
+        const msgPill = labelPill(this, W / 2, 166, 'Doing well? Try a wrong colour to see what happens.', { size: 20, depth: 906, fit: ['Doing well? Try a wrong colour to see what happens.'] });
         msgPill.label.setColor(CSS.indigo);
         this.time.delayedCall(6000, () => this.tweens.add({ targets: msgPill.container, alpha: 0, duration: 500, onComplete: () => msgPill.container.destroy() }));
       }
@@ -648,6 +653,6 @@ export default class Night5 extends Phaser.Scene {
     Sfx.fail();
     this.setStatus('');
     this.tweens.add({ targets: this.yamaState, ...YAMA_STAGES[3], duration: 600, onUpdate: () => this.applyYama() });
-    loseScreen(this, 'Yama arrived too soon…', `The tika had ${this.round} of 7 colours. Yamuna will try again.`, { size: 58 });
+    loseScreen(this, 'Yama arrived too soon…', `The tika had ${blossomsFor(this.round)} of ${TIKA.length} blossoms. Yamuna will try again.`, { size: 58 });
   }
 }

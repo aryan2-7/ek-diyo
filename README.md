@@ -5,11 +5,11 @@ through the five days of the festival. Every night one more wick joins the flame
 joins the music, and the diya's light is the only way to see.
 
 Made for the **KUCC Tihar-Chhath Web UI Contest 2026** (Kathmandu University Computer Club).
-Less than 10 minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
+About five minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
 
 | Night | Festival day | What you do |
 |------:|--------------|-------------|
-| 1 | Kaag Tihar (crows) | Light offering plates on the rooftop and feed ten crows before dusk fades. Gusts blow plates out unless you shield them; a golden crow counts double |
+| 1 | Kaag Tihar (crows) | Light offering plates on the rooftop and feed five crows before dusk fades. Gusts blow plates out unless you shield them; a golden crow counts double |
 | 2 | Kukur Tihar (dogs) | Run the street as the guard dog: jump the pots, gather the marigold garlands, reach the gate |
 | 3 | Gai Tihar & Laxmi Puja | Keep four lamps burning until midnight (stand beside one to refill and shield it), garland the cow. Laxmi's golden footprints walk as far as your lamps lit the way |
 | 4 | Govardhan Puja | Stack the annakut hill of offerings from a swinging rope and crown it with the maha-deep |

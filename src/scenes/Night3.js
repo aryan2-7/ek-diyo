@@ -13,7 +13,7 @@ import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg
 const lerp = Phaser.Math.Linear;
 
 // ---- tuning -------------------------------------------------------------
-const DURATION = 45; // seconds until midnight
+const DURATION = 28; // seconds until midnight
 const MAX_SPARKS = 5;
 const FLOOR = { top: 420, bottom: 700 };
 // the courtyard floor in bg_n3: [y, left edge, right edge] - keeps everyone off the side benches and walls
@@ -54,8 +54,8 @@ export default class Night3 extends Phaser.Scene {
     this.garlandsGiven = 0;
     this.blessing = 0;
     this.started = false;
-    this.nextGust = 10;
-    this.nextGarland = 5;
+    this.nextGust = 7;
+    this.nextGarland = 4;
     this.winAmbient = 0;
     this.won = false;
     this.lastBell = 0;
@@ -225,9 +225,9 @@ export default class Night3 extends Phaser.Scene {
   gust() {
     if (this.over) return;
     const picks = Phaser.Utils.Array.Shuffle(this.lamps.filter((l) => l.lit && !l.near)).slice(0, 2);
-    // a gust dims two unguarded lamps; after the first half of the night it can blow a weak one right out
+    // a gust dims two unguarded lamps; late in the night it can blow a weak one right out
     picks.forEach((l, i) => {
-      if (i === 0 && this.t > 30 && l.oil < 0.55) l.oil = 0;
+      if (i === 0 && this.t > DURATION * 0.65 && l.oil < 0.55) l.oil = 0;
       else l.oil = Math.max(Math.min(l.oil, 0.15), l.oil - 0.45);
     });
     // the lamps you stand beside: cupped hands, the flame bends but holds
@@ -364,7 +364,7 @@ export default class Night3 extends Phaser.Scene {
     Sfx.chime();
     Sfx.bell();
     this.say('Gai Puja done. The lamps are filled and burn slowly.');
-    this.nextGarland = this.t + 10;
+    this.nextGarland = this.t + 8;
   }
 
   // ---------------------------------------------------------------- loop
@@ -470,8 +470,8 @@ export default class Night3 extends Phaser.Scene {
     this.makeFootprint();
     const TOTAL = 10;
     const steps = 6 + burning; // every lamp that is lit carries her one step further
-    const START = 900;
-    const GAP = 400;
+    const START = 700;
+    const GAP = 330;
     for (let i = 0; i < steps; i++) {
       const u = i / (TOTAL - 1);
       const y = lerp(690, 396, u);

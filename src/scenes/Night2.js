@@ -17,8 +17,9 @@ const JUMP_TILT = -0.14; // ~8 degrees nose-up at the top of a leap
 const GRAVITY = 2400;
 const JUMP_V = -1200; // the original big, floaty leap: about 300 px high when you hold the button
 const SPEED = 430; // one steady pace: the challenge is reading the road, not outgrowing it
-const TRACK_EST = 23000; // rough distance to the gate until the last garlands are planned (the run ends once they are gathered)
-const GARLAND_GOAL = 45; // total garlands in the whole run: shorter run
+const TRACK_EST = 12500; // fallback distance to the gate until the last garlands are planned (the run ends once they are gathered)
+const GARLAND_GOAL = 24; // total garlands in the whole run: about 23 s and 5-6 jumps
+const FINALE_WAVE = 8; // the last garlands come as one wave after one tall pot
 const DIYA_FLOAT = { x: DOG_X + 250, y: 205 }; // the diya floats just ahead of the dog, so its light is where the action is
 // ---------------------------------------------------------------------------
 
@@ -265,7 +266,7 @@ export default class Night2 extends Phaser.Scene {
     const x0 = W + 150;
     // the last garlands come as one wave, so the total is exactly GARLAND_GOAL
     const remaining = GARLAND_GOAL - this.garlandsSeen;
-    if (remaining <= 10) {
+    if (remaining <= FINALE_WAVE) {
       this.spawnFinale(remaining);
       return;
     }

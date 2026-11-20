@@ -462,6 +462,17 @@ export function hudButtons(scene, { pause = false, settings: withSettings = fals
       icon.fillRoundedRect(3, -11, 6, 22, 2);
     }, () => openPause(scene));
     scene.input.keyboard.on('keydown-P', () => openPause(scene));
+    // The nights are timed (dusk, oil, Yama's clock): when the window or tab loses focus, pause instead of running on without the player.
+    const awayPause = () => {
+      if (scene.over || scene.phase === 'done' || scene.phase === 'lost') return; // already won or lost
+      openPause(scene);
+    };
+    scene.game.events.on(Phaser.Core.Events.BLUR, awayPause);
+    scene.game.events.on(Phaser.Core.Events.HIDDEN, awayPause);
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      scene.game.events.off(Phaser.Core.Events.BLUR, awayPause);
+      scene.game.events.off(Phaser.Core.Events.HIDDEN, awayPause);
+    });
   }
   let slot = 1;
   if (withSettings) {

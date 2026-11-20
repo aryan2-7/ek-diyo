@@ -7,7 +7,7 @@ import { Quality } from '../systems/quality.js';
 import { fireflies, windowGlows } from '../systems/ambience.js';
 import { bestLine } from '../state.js';
 import { openGreeting } from '../ui/greeting.js';
-import { text, titleText, button, focusMenu, go, fadeIn, coverBg, globalKeys, hudButtons } from '../ui/ui.js';
+import { text, titleText, button, focusMenu, go, fadeIn, coverBg, globalKeys, hudButtons, tornPaper } from '../ui/ui.js';
 
 const FIRST = 900; // ms until the first wick is lit
 const GAP = 650; // ms between wicks
@@ -57,30 +57,45 @@ export default class Ending extends Phaser.Scene {
 
     const t1 = titleText(this, W / 2, 104, 'Shubha Tihar', { size: 92, color: CSS.cream, depth: 20 }).setAlpha(0);
     const t2 = text(this, W / 2, 178, 'शुभ तिहार  ·  five days, five lights', { size: 32, color: CSS.turmeric, depth: 20, bold: true }).setAlpha(0);
-    const t3 = text(this, W / 2, 656, 'The crow, the dog, the cow, the hill of offerings, the sister and the brother:\nall of them guarded, all of them thanked.', { size: 25, color: CSS.cream, depth: 20, spacing: 6, wrap: 900 }).setAlpha(0);
-    [t1, t2, t3].forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, duration: 1200, delay: lit + 200 + i * 600 }));
-    // a recap built from the save: the five nights, in the player's own numbers
+    [t1, t2].forEach((t, i) => this.tweens.add({ targets: t, alpha: 1, duration: 1200, delay: lit + 200 + i * 600 }));
+
+    // The closing words and the player's own numbers sit on a paper card, so they read on any part of the picture.
     const recap = [1, 2, 3, 4, 5].map((n) => bestLine(n)).filter(Boolean);
-    if (recap.length) this.tweens.add({ targets: text(this, W / 2, 596, recap.join('  ·  '), { size: 20, color: CSS.turmeric, depth: 20, wrap: 1000 }).setAlpha(0), alpha: 0.9, duration: 1200, delay: lit + 1400 });
+    const CARD_W = 900;
+    const closing = text(this, W / 2, 0, 'The crow, the dog, the cow, the hill of offerings, the sister and the brother:\nall of them guarded, all of them thanked.', {
+      size: 25, color: CSS.indigo, shadow: false, depth: 22, spacing: 6, wrap: CARD_W - 80, origin: [0.5, 0],
+    });
+    const recapT = recap.length
+      ? text(this, W / 2, 0, recap.join('  ·  '), { size: 19, color: CSS.vermilion, bold: true, shadow: false, depth: 22, wrap: CARD_W - 80, origin: [0.5, 0] })
+      : null;
+    const PAD = 20;
+    const CARD_GAP = 10;
+    const cardH = PAD * 2 + closing.height + (recapT ? recapT.height + CARD_GAP : 0);
+    const cardY = H - 12 - cardH;
+    const card = this.add.graphics().setDepth(21);
+    tornPaper(card, W / 2 - CARD_W / 2, cardY, CARD_W, cardH, { seed: 83, amp: 2.2 });
+    closing.setY(cardY + PAD);
+    recapT?.setY(cardY + PAD + closing.height + CARD_GAP);
+    [card, closing, recapT].filter(Boolean).forEach((o, i) => {
+      o.setAlpha(0);
+      this.tweens.add({ targets: o, alpha: 1, duration: 1000, delay: lit + 1000 + i * 120 });
+    });
 
     // buttons (they fade in; invisible buttons must not be clickable). Arrow keys move the highlight, Enter presses it.
     const at = lit + 2000;
     const make = (y, label, fn) => {
-      const b = button(this, 1110, y, label, fn, { w: 250, h: 54, size: 24 });
+      const b = button(this, 1110, y, label, fn, { w: 250, h: 52, size: 24 });
       b.setAlpha(0).setVisible(false);
       b.input.enabled = false;
       this.tweens.add({ targets: b, alpha: 1, duration: 600, delay: at, onStart: () => b.setVisible(true), onComplete: () => (b.input.enabled = true) });
       return b;
     };
     const btns = [
-      make(380, 'Your five nights', () => this.open('Album')),
-      make(452, 'Greeting card', () => openGreeting(this)),
-      make(524, 'Play again', () => go(this, 'Title')),
+      make(300, 'Your five nights', () => this.open('Album')),
+      make(364, 'Greeting card', () => openGreeting(this)),
+      make(428, 'Play again', () => go(this, 'Title')),
+      make(492, 'Credits', () => this.open('Credits')),
     ];
-    const credits = button(this, 1110, 590, 'credits', () => this.open('Credits'), { w: 220, h: 46, size: 22, depth: 20 });
-    credits.setAlpha(0).setVisible(false);
-    credits.input.enabled = false;
-    this.tweens.add({ targets: credits, alpha: 0.8, duration: 600, delay: at, onStart: () => credits.setVisible(true), onComplete: () => (credits.input.enabled = true) });
     focusMenu(this, btns, { start: 2, readyAt: at + 600 });
   }
 

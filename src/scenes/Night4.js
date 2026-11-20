@@ -20,12 +20,12 @@ const ROPE_L = 900; // the offering hangs from a long rope far above the screen,
 const GRAV = 2400;
 const FALL_MAX = 1500; // falling speed cap
 const V_MAX = 175; // horizontal carry at release, capped so aiming stays fair
-const DROP = 26; // each placed layer rises this far above the one under it
-const NEED = 14; // offerings to place; the 15th swing is the maha-deep
+const DROP = 46; // each placed layer rises this far above the one under it (fewer layers now, so each one shows more)
+const NEED = 7; // offerings to place; the 8th swing is the maha-deep
 const LEAN_MAX = 21; // degrees; lean past this and the top layers slide off
 const LEAN_PER_PX = 0.12; // how far off-centre a drop tilts the hill
 const PERFECT = 14; // a drop this close steadies the hill
-const DURATION = 60; // evening seconds
+const DURATION = 36; // evening seconds
 
 const OFFER_KEYS = ['thali_grain', 'bowl_rice', 'bowl_curd', 'dry_fruit_plate'];
 // the art is painted as high three-quarter views; sq shrinks it so layers read flat and squat
@@ -40,11 +40,10 @@ const NAMES = {
   diya: 'The maha-deep',
 };
 
-// the hill's recipe: two dung pats, ten food layers, two garlands, then the lamp on top
+// the hill's recipe: two dung pats, four food layers, a garland, then the lamp on top (eight swings in all)
 function plan() {
   const p = [{ key: 'dung_pat', w: 430 }, { key: 'dung_pat', w: 400 }];
-  for (let i = 2; i < 12; i++) p.push({ key: OFFER_KEYS[(Math.random() * OFFER_KEYS.length) | 0], w: 330 - (i - 2) * 8 });
-  p.push({ key: 'marigold_mala', w: 340 });
+  for (let i = 0; i < 4; i++) p.push({ key: OFFER_KEYS[(Math.random() * OFFER_KEYS.length) | 0], w: 330 - i * 25 });
   p.push({ key: 'marigold_mala', w: 300 });
   p.push({ key: 'diya', w: 175 });
   return p;
@@ -273,11 +272,11 @@ export default class Night4 extends Phaser.Scene {
     this.time.delayedCall(650, () => this.spawn());
   }
 
-  // lean past the limit: the top layers slide off (soft fail — the hill keeps its lower half)
+  // lean past the limit: the top layer slides off (soft fail — the hill keeps what is below)
   topple() {
     if (this.over || this.landed.length === 0) return;
     this.phase = 'topple';
-    const n = Math.min(2, this.landed.length);
+    const n = Math.min(1, this.landed.length); // one layer slides off: each of the eight is worth more now
     const lost = this.landed.splice(this.landed.length - n, n);
     const dir = Math.sign(this.lean) || 1;
     lost.forEach((l, i) => {
@@ -323,7 +322,7 @@ export default class Night4 extends Phaser.Scene {
     const t = titleText(this, W / 2, 250, 'The hill is crowned.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900 });
     const left = Math.max(0, Math.round(DURATION - this.t));
-    this.time.delayedCall(6600, () => {
+    this.time.delayedCall(4800, () => {
       completeNight(4, { offerings: NEED, splats: this.miss });
       go(this, 'StoryCard', {
         night: 4,

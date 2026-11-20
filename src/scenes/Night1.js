@@ -10,8 +10,8 @@ import { finish, snap, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, popText, reviewerControls } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-const DURATION = 55; // seconds until dusk is gone
-const GOAL = 10; // crows to feed
+const DURATION = 32; // seconds until dusk is gone
+const GOAL = 5; // crows to feed
 const MAX_PLATES = 3;
 const LIGHT_TIME = 0.85; // seconds beside a plate to light it
 const EAT_TIME = 2.4;
@@ -42,7 +42,7 @@ export default class Night1 extends Phaser.Scene {
     this.plates = [];
     this.crows = [];
     this.lastFlap = 0;
-    this.nextGust = 9; // seconds of play (after the first 8) until the first gust
+    this.nextGust = 7; // seconds of play (after the first 5) until the first gust
     this.crowsSent = 0;
     this.toldAboutGusts = false;
   }
@@ -205,7 +205,7 @@ export default class Night1 extends Phaser.Scene {
     spr.setScale(base);
     const c = { spr, base, mode: 'fly', seed: Math.random() * 6, p };
     this.crowsSent++;
-    if (this.crowsSent === 4 || this.crowsSent === 9) {
+    if (this.crowsSent === 3) {
       c.golden = true; // a rare golden crow: counts for two
       spr.setTint(0xffd36e);
     }
@@ -400,10 +400,10 @@ export default class Night1 extends Phaser.Scene {
       }
       if (target) this.k.target = { x: target.x, y: target.y };
     }
-    if (this.started && !this.over && this.t > 8) {
+    if (this.started && !this.over && this.t > 5) {
       this.nextGust -= dt;
       if (this.nextGust <= 0) {
-        this.nextGust = Phaser.Math.Between(14, 20);
+        this.nextGust = Phaser.Math.Between(10, 13);
         this.gustWarning();
       }
     }
@@ -413,7 +413,7 @@ export default class Night1 extends Phaser.Scene {
     this.light.update(time);
     this.sun.x = this.barX + this.barW * k;
 
-    // if dusk ends while the tenth crow is still flying in, let it land: the goal was already met
+    // if dusk ends while the last crow is still flying in, let it land: the goal was already met
     const inbound = this.crows.filter((c) => c.mode === 'fly').length;
     if (!this.over && this.t >= DURATION && this.fed < GOAL && this.fed + inbound < GOAL) this.lose();
   }
