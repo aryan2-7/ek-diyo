@@ -9,9 +9,16 @@ The game makes all of its sound itself (Web Audio), so it works with no audio fi
 
 A 30 second render of the full mix (`audio-preview.wav`) was sent along with the patch so you can hear it without running the game. It is not committed (4 MB).
 
+## One finished track (the quick way)
+
+Put any audio file in `public/audio/` (say `tihar.mp3`) and set `"track": "audio/tihar.mp3"` in `public/audio/manifest.json` (it is left empty on purpose: a name for a file that is not there would make a failed request on every load).
+It loops for the whole game and takes the place of the generated score: quiet and a little muffled on the title, then louder and brighter as each wick is lit.
+If the file is missing or cannot be decoded, the generated score plays instead. Effects stay synthesized. Check the loop point (a track that fades out sounds odd when it repeats).
+The track is part of the page, so anyone who opens the hosted game can download it.
+
 ## Using real recordings
 
-Put files in `public/audio/` and list them in `public/audio/manifest.json`. Nothing else changes; anything not listed stays synthesized.
+For effects or five matching stems, list them in `public/audio/manifest.json`. Nothing else changes; anything not listed stays synthesized.
 
 ```json
 {

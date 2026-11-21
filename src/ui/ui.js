@@ -157,8 +157,33 @@ function waitForAssets(scene, then) {
     tick.remove();
     veil.destroy();
     label.destroy();
-    then();
+    if (Assets.failed.length) assetProblem(scene, then);
+    else then();
   });
+}
+
+/** The background art finished loading but some pictures never arrived (a bad connection): offer a retry instead of blank boxes. */
+function assetProblem(scene, leave) {
+  const veil = scene.add.rectangle(0, 0, W, H, COLORS.soot, 0.88).setOrigin(0).setDepth(3090).setInteractive();
+  const parts = [
+    veil,
+    text(scene, W / 2, H / 2 - 84, 'Some pictures did not load', { size: 42, color: CSS.cream, bold: true, depth: 3100 }),
+    text(scene, W / 2, H / 2 - 26, 'Check your connection, then try again.', { size: 26, color: CSS.turmeric, depth: 3100 }),
+  ];
+  const clear = () => parts.forEach((o) => o.destroy());
+  parts.push(
+    button(scene, W / 2 - 170, H / 2 + 62, 'Try again', () => {
+      clear();
+      Assets.ready = false;
+      Assets.progress = 0;
+      waitForAssets(scene, leave);
+      scene.scene.launch('BgLoad'); // loads only what is still missing
+    }, { w: 280, h: 60, size: 28, depth: 3100 }),
+    button(scene, W / 2 + 170, H / 2 + 62, 'Play anyway', () => {
+      clear();
+      leave();
+    }, { w: 280, h: 60, size: 28, depth: 3100 }),
+  );
 }
 
 /** Leave this scene for another one (waits for the background art loader if it is not finished). */
@@ -176,7 +201,8 @@ export function go(scene, key, data) {
     const w = makeWipe(scene);
     scene.tweens.add({ targets: w, x: W + 60, duration: 520, ease: 'Sine.easeInOut', onComplete: start });
   };
-  if (Assets.ready || key === 'Title') leave();
+  if (key === 'Title' || (Assets.ready && !Assets.failed.length)) leave();
+  else if (Assets.ready) assetProblem(scene, leave);
   else waitForAssets(scene, leave);
 }
 

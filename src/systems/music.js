@@ -30,6 +30,8 @@ let noiseBuf = null;
 let fi = 2; // where the flute is on its scale
 let generative = true;
 let stemSrc = [];
+let track = null; // { src, filter, gain }: one finished recording that replaces the generated score
+const TRACK_VOL = 0.85;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
 /** A steady tick that is not slowed down when the tab is in the background (a worker; falls back to setInterval). */
@@ -358,6 +360,17 @@ export const Music = {
         else g.gain.setTargetAtTime(target, now, 1.4);
       });
     }
+    if (track) {
+      // one recording instead of layers: it gets louder and brighter as the wicks are lit (muffled and quiet on the title)
+      const k = Math.max(0, Math.min(1, (n - 1) / 4));
+      const vol = n <= 0 ? 0 : TRACK_VOL * (0.72 + 0.28 * k);
+      const cutoff = n <= 0 ? 600 : 2600 * 8 ** k; // 2.6 kHz at the first wick, wide open at the fifth
+      [[track.gain.gain, vol], [track.filter.frequency, cutoff]].forEach(([p, v]) => {
+        p.cancelScheduledValues(now);
+        if (instant) p.setValueAtTime(v, now);
+        else p.setTargetAtTime(v, now, 1.4);
+      });
+    }
   },
   start() {
     if (!C || timer || !generative) return;
@@ -390,6 +403,50 @@ export const Music = {
       s.start(t);
       return s;
     });
+  },
+  /** One finished recording (any length, looped) replaces the generated score. */
+  useTrack(buffer) {
+    if (!C) return;
+    generative = false;
+    this.stop();
+    stemSrc.forEach((s) => {
+      try {
+        s.stop();
+      } catch {
+        /* already stopped */
+      }
+    });
+    stemSrc = [];
+    if (track) {
+      try {
+        track.src.stop();
+      } catch {
+        /* already stopped */
+      }
+    }
+    const src = C.createBufferSource();
+    src.buffer = buffer;
+    src.loop = true;
+    const filter = C.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 0.4;
+    const gain = C.createGain();
+    gain.gain.value = 0;
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(bus);
+    track = { src, filter, gain };
+    src.start(C.currentTime + 0.1);
+    this.setLevel(level, true);
+  },
+  /** What is playing: 'track' (one recording), 'stems' (five loops) or 'generated' (the built-in score). For tests and debugging. */
+  mode() {
+    if (track) return 'track';
+    return generative ? 'generated' : 'stems';
+  },
+  /** Current volume and filter of the single recording, or null (tests and debugging). */
+  trackState() {
+    return track ? { gain: track.gain.gain.value, cutoff: track.filter.frequency.value } : null;
   },
   /** Offline rendering (tests): schedule `seconds` of music from time 0. */
   plan(seconds) {

@@ -1,22 +1,29 @@
 # Changelog
 
-## 0.4.0 (2026-11-20): a shorter game, and a few finishing touches
+## 0.4.0 (2026-11-20): a somewhat shorter game, and finishing touches
 
-**Shorter (about half the length of every night)**
+**Length (Nights 1 to 3 trimmed; Nights 4 and 5 unchanged)**
 
-* **Night 1:** five crows instead of ten, 32 s of dusk instead of 55 s; the first gust comes earlier and the golden crow is the third one sent. Flame rating now counts spare dusk out of 32 s (3 flames at 12 s or more, 2 at 6 s or more; the old 45 s / 20 s bars were out of reach)
-* **Night 2:** 24 garlands instead of 45 (`GARLAND_GOAL`), so about 23 s of running and 5 to 6 jumps instead of about 38 s and 11; the final wave is 8 garlands (`FINALE_WAVE`)
-* **Night 3:** 28 s until midnight instead of 45 s, with gusts and the first garland arriving sooner; Laxmi's footprints walk a little faster
-* **Night 4:** a hill of 8 swings instead of 15 (two dung pats, four offerings, a garland, the maha-deep), 36 s of evening instead of 60 s; each layer is taller (`DROP`), a lean past the limit now costs one layer instead of two, and the crowning waits 4.8 s instead of 6.6 s before the story card
-* **Night 5:** four rounds of colours (1 to 4 long) instead of six (1 to 6), the dry fruits come after round 2, Yama's clock is 70 s instead of 120 s and each task buys 10 s; the close-up still lays all six blossoms of the tika
+* **Night 1:** still five crows to feed, with 45 s of dusk instead of 55 s. Plates now come on a slow 3 to 4 s beat (they used to be replaced two at a time), at most 3 on the roof at once and never more than the crows still needed plus two spare, so about seven birds appear for the five that must eat (`SPARE_PLATES`, `SPAWN_GAP`). The golden crow is the third one sent, gusts come a little less often, and the flame rating counts spare dusk out of 45 s (3 flames at 16 s or more, 2 at 8 s or more; the old bars were out of reach)
+* **Night 2:** 35 garlands instead of 45 (`GARLAND_GOAL`), about 31 s of running and 8 jumps instead of about 38 s and 11
+* **Night 3:** 36 s until midnight instead of 45 s, and the garlands come on a fixed rhythm: the first at 3 s and each next one 5 s after the last is given, so even a slow player gets at least three
+
+**Fixes**
+
+* **Night 2 auto mode** no longer runs into every obstacle. It used to jump when the obstacle was a fixed 460 px away, but a leap lasts about a second (about 430 px of running), so the dog landed on it (8 to 10 stumbles a run). It now jumps when the obstacle is half a leap ahead, and treats a close pair as one jump
+* All timed nights now pause by themselves when the window or tab loses focus (alt-tab, a phone notification, switching apps), instead of running on while the player is away
+* **Title:** with saved progress and the story not yet finished, the main button is "Continue · Night N" (Enter or Space), with "Begin again" above it. A first-time player still sees "Begin"
+* **Failed downloads:** a picture that fails to load (flaky connection) is retried quietly. If the background art still will not load, choosing Begin or a night shows "Some pictures did not load" with Try again and Play anyway. If the title's own pictures fail, the loading screen retries and then offers a reload, instead of silently showing blank boxes
+
+**Music**
+
+* A single finished track can now replace the generated score: put the file in `public/audio/` and set `music.track` in `public/audio/manifest.json` (details in `docs/AUDIO.md`). It loops, and gets louder and brighter as the wicks are lit. With no file, the generated score plays as before
 
 **Finishing touches**
 
 * **Ending:** the closing words and your five results now sit on a paper card, so they read on any part of the picture; the buttons are one even column (Credits is a real button now, not a faint link) and no longer collide with the results line
 * **Credits:** the card is sized to its text with an even margin (it used to run nearly edge to edge with Close sitting on its border), has a title and a row of five lights, balanced line breaks, a settle-in, and closes with Esc, Enter or Space
-* All timed nights now pause by themselves when the window or tab loses focus (alt-tab, a phone notification, switching apps), instead of running on while the player is away
-* Night 5: the "Doing well? Try a wrong colour" hint no longer sits on top of Yama's mistake counter; it is centred under the status banner
-* The Night 5 lose screen said "of 7 colours" for a six-round count; it now reports blossoms laid out of six
+* Night 5: the "Doing well? Try a wrong colour" hint no longer sits on top of Yama's mistake counter; it is centred under the status banner. The lose screen now counts the tika's colours properly (the bar plus one blossom per round, out of 7)
 
 ## 0.3.0 (2026-11-09): polish pass
 

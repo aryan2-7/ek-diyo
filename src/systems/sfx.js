@@ -1,6 +1,6 @@
 // Sound. Everything is synthesized with Web Audio, so the game has full sound before any audio file exists.
 // To use real recordings, list them in public/audio/manifest.json (docs/AUDIO.md): a file named after an Sfx method
-// replaces that effect, and five loop files replace the generated score. Nothing else has to change.
+// replaces that effect, and either five loop files or one finished track replace the generated score. Nothing else has to change.
 import { state, save } from '../state.js';
 import { settings } from './settings.js';
 import { Music } from './music.js';
@@ -219,7 +219,9 @@ async function loadFiles() {
       }
     }
     const stems = m.music?.stems;
+    const one = m.music?.track;
     if (Array.isArray(stems) && stems.length >= 5) Music.useStems(await Promise.all(stems.slice(0, 5).map(get)));
+    else if (typeof one === 'string' && one) Music.useTrack(await get(one)); // an empty name asks for no file, so nothing is fetched
   } catch {
     /* no files: the synthesized kit is used */
   }

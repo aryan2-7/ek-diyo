@@ -64,15 +64,30 @@ export default class Title extends Phaser.Scene {
       this.tweens.add({ targets: t, y: t.y - 14, duration: 900, delay: 500 + i * 350, ease: 'Sine.easeOut' });
     });
 
-    // play button (Enter or Space also begins)
+    // play buttons (Enter or Space presses the main one). With progress saved and the story not yet finished, the main
+    // button picks up at the furthest night; "Begin again" is the smaller one above it and replays the story from the start.
+    const idle = () => this._leaving || this.gateUp || this.time.now < this.lockUntil;
     const begin = () => {
-      if (this._leaving || this.gateUp || this.time.now < this.lockUntil) return;
+      if (idle()) return;
       Sfx.startAmbient();
       go(this, 'StoryCard', { night: 0, card: PROLOGUE, stats: [], next: 'Night1', wicksBefore: 0 });
     };
-    this.play = button(this, 1020, 650, state.unlocked > 1 ? 'Begin again' : 'Begin', begin, { w: 300, h: 68, size: 34 });
-    this.input.keyboard.on('keydown-ENTER', begin);
-    this.input.keyboard.on('keydown-SPACE', begin);
+    const resumeNight = Math.min(state.unlocked, IMPLEMENTED);
+    const canResume = resumeNight > 1 && !state.best[5]; // played some, and not yet through the last night
+    const resume = () => {
+      if (idle()) return;
+      Sfx.startAmbient();
+      go(this, NIGHTS[resumeNight].scene);
+    };
+    if (canResume) {
+      button(this, 1020, 574, 'Begin again', begin, { w: 300, h: 52, size: 26 });
+      this.play = button(this, 1020, 650, `Continue · Night ${resumeNight}`, resume, { w: 300, h: 68, size: 32 });
+    } else {
+      this.play = button(this, 1020, 650, state.unlocked > 1 ? 'Begin again' : 'Begin', begin, { w: 300, h: 68, size: 34 });
+    }
+    const main = canResume ? resume : begin;
+    this.input.keyboard.on('keydown-ENTER', main);
+    this.input.keyboard.on('keydown-SPACE', main);
 
     // night select: flames show how well each night went (visible on touch too); hover a finished night for the details
     this.best = text(this, 36, 704, '', { size: 20, color: CSS.turmeric, origin: [0, 0.5], depth: 30 });

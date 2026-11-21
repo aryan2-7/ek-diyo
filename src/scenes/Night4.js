@@ -305,14 +305,18 @@ export default class Night4 extends Phaser.Scene {
     Sfx.fanfare();
     this.say.setText('');
     if (this.hint) this.tweens.add({ targets: this.hint, alpha: 0, duration: 400 });
-    // the maha-deep burns at the crown
+    // the maha-deep burns at the crown, on the diya's wick
     this.flame = new FlameCluster(this, 1, { size: 54, depth: 640 });
-    this.flame.setPosition(wx, landY - h * 0.34);
+    const flameX = wx + (0.96 - 0.5) * this.swap.w;
+    const flameY = landY - (1 - 0.03) * h;
+    this.flame.setPosition(flameX, flameY);
+    this.hillLight.x = flameX;
+    this.hillLight.y = flameY;
     this.add.particles(0, 0, 'ember', {
       lifespan: { min: 700, max: 1300 }, speedY: { min: -40, max: -90 }, speedX: { min: -20, max: 20 },
       scale: { start: 0.7, end: 0 }, alpha: { start: 0.9, end: 0 }, blendMode: 'ADD', frequency: 130,
     }).setDepth(645).startFollow(this.flame, 0, -26);
-    const glow = this.add.image(wx, landY - h * 0.4, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(630).setAlpha(0).setScale(4);
+    const glow = this.add.image(flameX, flameY, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(630).setAlpha(0).setScale(4);
     this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: this.hillLight, radius: 560, duration: 1600 });
     this.tweens.add({ targets: this, ambient: 0.34, duration: 1800 });

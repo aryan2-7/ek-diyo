@@ -10,9 +10,11 @@ import { finish, snap, stepNoise } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, popText, reviewerControls } from '../ui/ui.js';
 
 // ---- tuning -------------------------------------------------------------
-const DURATION = 32; // seconds until dusk is gone
+const DURATION = 45; // seconds until dusk is gone
 const GOAL = 5; // crows to feed
-const MAX_PLATES = 3;
+const MAX_PLATES = 3; // plates on the roof at once
+const SPARE_PLATES = 2; // plates allowed beyond the goal in total: about 7 birds for 5 to feed (a gust can ruin one)
+const SPAWN_GAP = [3, 4]; // seconds between one new plate and the next
 const LIGHT_TIME = 0.85; // seconds beside a plate to light it
 const EAT_TIME = 2.4;
 const SPEED = 340;
@@ -40,9 +42,10 @@ export default class Night1 extends Phaser.Scene {
     this.lost = false;
     this.winAmbient = 0;
     this.plates = [];
+    this.spawnIn = 1.2; // seconds until the next plate may appear
     this.crows = [];
     this.lastFlap = 0;
-    this.nextGust = 7; // seconds of play (after the first 5) until the first gust
+    this.nextGust = 9; // seconds of play (after the first 5) until the first gust
     this.crowsSent = 0;
     this.toldAboutGusts = false;
   }
@@ -88,8 +91,6 @@ export default class Night1 extends Phaser.Scene {
     this.k.enabled = true;
     this.hint = hintPill(this, 'Drag, arrow keys or WASD to move  ·  stand beside a plate to light it', H - 44);
     this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
-    this.time.delayedCall(1200, () => this.spawnPlate());
-    this.time.delayedCall(3000, () => this.spawnPlate());
   }
 
   // ---------------------------------------------------------------- HUD
@@ -292,8 +293,6 @@ export default class Night1 extends Phaser.Scene {
       p.glow.destroy();
       this.plates.splice(this.plates.indexOf(p), 1);
     });
-    this.time.delayedCall(1100, () => this.spawnPlate());
-    this.time.delayedCall(2400, () => this.spawnPlate());
   }
 
   /** A crow whose plate went out: it flies away without eating. */
@@ -384,6 +383,18 @@ export default class Night1 extends Phaser.Scene {
     this.k.update(time, dt);
     this.updatePlates(dt, time);
     this.updateCrows(time);
+    // Plates come on a slow, steady beat instead of two replacing every one that is finished. The roof never gets more plates
+    // than the crows still to be fed plus a spare or two, so about seven birds appear for the five that must eat.
+    if (this.started && !this.over) {
+      this.spawnIn -= dt;
+      if (this.spawnIn <= 0) {
+        const waiting = this.plates.filter((p) => p.state === 'idle' || p.state === 'lit').length; // not eating yet
+        if (this.plates.length < MAX_PLATES && this.fed + waiting < GOAL + SPARE_PLATES) {
+          this.spawnPlate();
+          this.spawnIn = Phaser.Math.FloatBetween(SPAWN_GAP[0], SPAWN_GAP[1]);
+        } else this.spawnIn = 0.4;
+      }
+    }
     if (this.autoPlay && this.started && !this.over) {
       const plates = this.plates || [];
       let target = null;
@@ -403,7 +414,7 @@ export default class Night1 extends Phaser.Scene {
     if (this.started && !this.over && this.t > 5) {
       this.nextGust -= dt;
       if (this.nextGust <= 0) {
-        this.nextGust = Phaser.Math.Between(10, 13);
+        this.nextGust = Phaser.Math.Between(12, 16);
         this.gustWarning();
       }
     }

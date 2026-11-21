@@ -1,5 +1,5 @@
 {
-  "_help": "Optional real audio. Leave both lists empty and the game uses its built-in synthesized sound. See docs/AUDIO.md. 'sfx': name of an effect (click, chime, caw, flap, light, jump, land, collect, hit, yelp, bark, slide, paper, whoosh, note, fanfare, bell, fail, step, cowbell, footprint, shimmer, perfect, tick) -> file in this folder. 'stems': five loops of the SAME length (layer 1 = drone only ... layer 5 = full), played in sync; one more layer joins as each wick is lit.",
+  "_help": "Optional real audio. Leave it empty and the game uses its built-in synthesized sound. See docs/AUDIO.md. 'track': ONE finished song that loops for the whole game and gets louder and brighter as each wick is lit: put the file in this folder and set the name here, e.g. \"audio/tihar.mp3\" (left empty, nothing is requested). 'stems': five loops of the SAME length (layer 1 = drone only ... layer 5 = full), played in sync; they win over 'track' if both are listed. 'sfx': name of an effect (click, chime, caw, flap, light, jump, land, collect, hit, yelp, bark, slide, paper, whoosh, note, fanfare, bell, fail, step, cowbell, footprint, shimmer, perfect, tick) -> file in this folder.",
   "sfx": {},
-  "music": { "stems": [] }
+  "music": { "stems": [], "track": "" }
 }

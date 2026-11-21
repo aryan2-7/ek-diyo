@@ -275,7 +275,8 @@ export default class Night5 extends Phaser.Scene {
     const last = this.round >= ROUNDS.length;
     this.drawStripes(blossomsFor(last ? this.round - 1 : this.round)); // the rest are laid in the close-up
     Sfx.chime();
-    this.setStatus(last ? 'One last colour…' : 'Beautiful. Another colour…');
+    // "One last colour…" should announce the final round one step ahead, not after it is done
+    if (!last) this.setStatus(this.round === ROUNDS.length - 1 ? 'One last colour…' : 'Beautiful. Another colour…');
     this.tweens.add({ targets: this.yamuna, y: YAMUNA.y - 12, yoyo: true, duration: 240 });
     if (last) this.time.delayedCall(1100, () => this.tikaClose());
     else if (this.round === FRUIT_AFTER && !this.tasks.fruit) {
@@ -653,6 +654,6 @@ export default class Night5 extends Phaser.Scene {
     Sfx.fail();
     this.setStatus('');
     this.tweens.add({ targets: this.yamaState, ...YAMA_STAGES[3], duration: 600, onUpdate: () => this.applyYama() });
-    loseScreen(this, 'Yama arrived too soon…', `The tika had ${blossomsFor(this.round)} of ${TIKA.length} blossoms. Yamuna will try again.`, { size: 58 });
+    loseScreen(this, 'Yama arrived too soon…', `The tika had ${this.round > 0 ? this.round + 1 : 0} of 7 colours. Yamuna will try again.`, { size: 58 });
   }
 }

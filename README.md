@@ -5,7 +5,7 @@ through the five days of the festival. Every night one more wick joins the flame
 joins the music, and the diya's light is the only way to see.
 
 Made for the **KUCC Tihar-Chhath Web UI Contest 2026** (Kathmandu University Computer Club).
-About five minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
+Around seven minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
 
 | Night | Festival day | What you do |
 |------:|--------------|-------------|

@@ -17,9 +17,9 @@ const JUMP_TILT = -0.14; // ~8 degrees nose-up at the top of a leap
 const GRAVITY = 2400;
 const JUMP_V = -1200; // the original big, floaty leap: about 300 px high when you hold the button
 const SPEED = 430; // one steady pace: the challenge is reading the road, not outgrowing it
-const TRACK_EST = 12500; // fallback distance to the gate until the last garlands are planned (the run ends once they are gathered)
-const GARLAND_GOAL = 24; // total garlands in the whole run: about 23 s and 5-6 jumps
-const FINALE_WAVE = 8; // the last garlands come as one wave after one tall pot
+const TRACK_EST = 18000; // fallback distance to the gate until the last garlands are planned (the run ends once they are gathered)
+const GARLAND_GOAL = 35; // total garlands in the whole run: about 31 s and 8 jumps
+const FINALE_WAVE = 10; // the last garlands come as one wave after one tall pot
 const DIYA_FLOAT = { x: DOG_X + 250, y: 205 }; // the diya floats just ahead of the dog, so its light is where the action is
 // ---------------------------------------------------------------------------
 
@@ -382,10 +382,15 @@ export default class Night2 extends Phaser.Scene {
     }
 
     if (this.autoPlay && (this.phase === 'run' || this.phase === 'gate') && this.onGround) {
-      const threshold = this.fastPlay ? 520 : 460;
-      for (const o of this.obs) {
-        const dx = o.x - DOG_X;
-        if (dx > 0 && dx < threshold) { this.pressJump(); break; }
+      // A leap lasts about a second (half of it going up), so the dog must leave the ground when the thing to clear is half a
+      // leap ahead (speed x 0.5): it is then right under the top of the arc as it passes, with the garlands over it in reach.
+      // (It used to jump at a fixed 460 px, which lands the dog on top of the obstacle.) A close pair counts as one jump.
+      const ahead = this.obs.filter((o) => o.x - DOG_X > -30).sort((a, b) => a.x - b.x);
+      if (ahead.length) {
+        let last = ahead[0];
+        for (let i = 1; i < ahead.length && ahead[i].x - last.x < 220; i++) last = ahead[i];
+        const mid = (ahead[0].x + last.x) / 2 - DOG_X;
+        if (mid <= Math.max(this.speed, 200) * 0.5) this.pressJump();
       }
     }
     this.updateDog(time, dt);
