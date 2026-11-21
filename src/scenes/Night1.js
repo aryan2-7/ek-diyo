@@ -138,11 +138,11 @@ export default class Night1 extends Phaser.Scene {
     for (let tries = 0; tries < 40; tries++) {
       y = Phaser.Math.Between(WALK.top + 15, WALK.bottom - 25);
       x = Phaser.Math.Between(walkLeft(y) + 30, walkRight(y) - 30);
-      const far = this.plates.every((p) => Phaser.Math.Distance.Between(p.x, p.y * 1.7, x, y * 1.7) > 200);
-      if (far && Phaser.Math.Distance.Between(this.k.x, this.k.y * 1.7, x, y * 1.7) > 230) break;
+      const far = this.plates.every((p) => Phaser.Math.Distance.Between(p.x, p.y * 1.7, x, y * 1.7) > 280);
+      if (far && Phaser.Math.Distance.Between(this.k.x, this.k.y * 1.7, x, y * 1.7) > 260) break;
     }
     const tp = depthT(y);
-    const w = lerp(120, 175, tp);
+    const w = lerp(70, 105, tp);
     const spr = this.add.image(x, y, 'thali_grain').setOrigin(0.5, 0.75).setDepth(y);
     spr.setScale(w / spr.width);
     const dh = spr.displayHeight;
@@ -164,17 +164,18 @@ export default class Night1 extends Phaser.Scene {
       if (p.state === 'idle') {
         const dx = this.k.x - p.x;
         const dy = (this.k.y - p.y) * 1.7;
-        const near = !this.over && dx * dx + dy * dy < 175 * 175;
+        const near = !this.over && dx * dx + dy * dy < (p.w * 1.4) * (p.w * 1.4);
         p.prog = near ? Math.min(1, p.prog + dt / LIGHT_TIME) : Math.max(0, p.prog - dt * 1.2);
         p.spark.setAlpha(0.45 + 0.35 * Math.sin(time * 0.006 + p.seed)).setScale(0.45 + 0.12 * Math.sin(time * 0.008 + p.seed));
         if (p.prog > 0.02) {
+          const rr = p.w * 0.5;
           g.lineStyle(7, COLORS.soot, 0.45);
           g.beginPath();
-          g.arc(p.x, p.y - p.dh * 0.3, 58, 0, Math.PI * 2);
+          g.arc(p.x, p.y - p.dh * 0.3, rr, 0, Math.PI * 2);
           g.strokePath();
           g.lineStyle(7, COLORS.turmeric, 1);
           g.beginPath();
-          g.arc(p.x, p.y - p.dh * 0.3, 58, -Math.PI / 2, -Math.PI / 2 + p.prog * Math.PI * 2, false);
+          g.arc(p.x, p.y - p.dh * 0.3, rr, -Math.PI / 2, -Math.PI / 2 + p.prog * Math.PI * 2, false);
           g.strokePath();
         }
         if (p.prog >= 1) this.lightPlate(p);
@@ -202,7 +203,7 @@ export default class Night1 extends Phaser.Scene {
     const p2 = { x: p.perch.x, y: p.perch.y - 20 };
     const p1 = { x: (p0.x + p2.x) / 2, y: Math.min(p0.y, p2.y) - Phaser.Math.Between(120, 200) };
     const spr = this.add.image(p0.x, p0.y, 'crow_fly').setDepth(840);
-    const base = lerp(150, 200, depthT(p.y)) / spr.width;
+    const base = lerp(90, 120, depthT(p.y)) / spr.width;
     spr.setScale(base);
     const c = { spr, base, mode: 'fly', seed: Math.random() * 6, p };
     this.crowsSent++;
@@ -239,7 +240,7 @@ export default class Night1 extends Phaser.Scene {
     }
     c.mode = 'perch';
     spr.setTexture('crow_perched').setOrigin(0.5, 1).setRotation(0).setDepth(p.y + 1);
-    const pw = lerp(125, 175, depthT(p.y));
+    const pw = lerp(75, 105, depthT(p.y));
     c.pBase = pw / spr.width;
     spr.setScale(c.pBase * 1.15, c.pBase * 0.85).setPosition(p.perch.x, p.perch.y).setFlipX(spr.flipX);
     this.tweens.add({ targets: spr, scaleX: c.pBase, scaleY: c.pBase, duration: 260, ease: 'Back.easeOut' });
@@ -331,7 +332,7 @@ export default class Night1 extends Phaser.Scene {
   shielded(p) {
     const dx = this.k.x - p.x;
     const dy = (this.k.y - p.y) * 1.7;
-    return dx * dx + dy * dy < 230 * 230;
+    return dx * dx + dy * dy < 160 * 160;
   }
 
   gust() {

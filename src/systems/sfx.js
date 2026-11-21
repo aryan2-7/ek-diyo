@@ -311,7 +311,7 @@ export const Sfx = {
     if (!ctx || !sfxBus) return;
     const t = ctx.currentTime;
     sfxBus.gain.setTargetAtTime(settings.sfx, t, 0.05);
-    musicBus.gain.setTargetAtTime(settings.music * 0.5 * (ducked ? 0.45 : 1), t, 0.2);
+    musicBus.gain.setTargetAtTime(settings.music * 0.6 * (ducked ? 0.45 : 1), t, 0.2);
     // a slider at its lowest stops the music (and a raised one starts it again)
     if (settings.music <= 0.001) {
       if (ambientOn) {

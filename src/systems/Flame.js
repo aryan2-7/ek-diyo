@@ -116,7 +116,7 @@ export class DiyaRig {
     let rise = 0;
     if (!s.own) {
       wick = this.scene.add.image(p.x, p.y, 'wick').setOrigin(0.5, 1).setRotation(s.rot).setDepth(this.depth + 1);
-      wick.setScale(this.k * 1.9);
+      wick.setScale(this.k * 1.0);
       rise = wick.displayHeight * 0.92;
     }
     const size = this.img.displayWidth * (this.five ? 0.17 : 0.34);
@@ -214,7 +214,7 @@ export class FlameCluster {
     this.wicks = [];
     for (let i = 0; i < count; i++) {
       this.flames.push(new Flame(scene, 0, 0, { size: i === 0 ? size : size * 0.82, depth, glow }));
-      const wick = scene.add.image(0, 0, 'wick').setOrigin(0.5, 1).setDepth(depth - 1);
+      const wick = scene.add.image(0, 0, 'wick').setOrigin(0.5, 1).setDepth(depth - 1).setVisible(false);
       this.wicks.push(wick);
     }
   }
@@ -252,7 +252,10 @@ export class FlameCluster {
       const w = this.wicks[i];
       if (w) {
         const s = i === 0 ? this.size : this.size * 0.82;
-        w.setPosition(fx, fy).setScale(s * 0.015).setDepth(this.depth - 1);
+        const k = i === 0 ? 0 : Math.ceil(i / 2);
+        // wicks grow longer toward the centre/bottom of the diya and shorter toward the edges
+        const len = s * 0.005 * (1 - k * 0.12);
+        w.setPosition(fx, fy).setScale(len).setDepth(this.depth - 1);
       }
     });
   }

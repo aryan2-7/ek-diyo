@@ -190,6 +190,8 @@ function assetProblem(scene, leave) {
 export function go(scene, key, data) {
   if (scene._leaving) return;
   scene._leaving = true;
+  // reset audio ducking/muffling as we leave, so it never lingers into the next scene
+  try { Sfx.duck(false); Sfx.muffle(false); } catch (e) {}
   const start = () => scene.scene.start(key, data);
   const leave = () => {
     if (settings.reduceMotion) {

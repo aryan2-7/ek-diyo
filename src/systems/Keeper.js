@@ -141,8 +141,8 @@ export class Keeper {
       const cy = this.y - hop - dh * (1 - SIDE.fy);
       this.held.setVisible(true).setPosition(cx, cy).setDepth(this.y + 1);
       this.held.setScale((dh * 0.22) / this.held.width).setFlipX(this.dir < 0);
-      fx = cx + this.dir * this.held.displayWidth * 0.44;
-      fy = cy - this.held.displayHeight * 0.44;
+      fx = cx + this.dir * this.held.displayWidth * 0.46;
+      fy = cy - this.held.displayHeight * 0.47;
     }
     this.flames.setSize(dh * 0.15); // was 0.2: the flame covered his face
     this.flames.setPosition(fx, fy);

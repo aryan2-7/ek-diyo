@@ -469,7 +469,7 @@ export default class Night3 extends Phaser.Scene {
   laxmiWalks(burning) {
     this.makeFootprint();
     const TOTAL = 10;
-    const steps = 6 + burning; // every lamp that is lit carries her one step further
+    const steps = Math.min(TOTAL, 6 + burning); // every lamp that is lit carries her one step further
     const START = 700;
     const GAP = 330;
     for (let i = 0; i < steps; i++) {

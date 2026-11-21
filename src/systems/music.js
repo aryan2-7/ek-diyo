@@ -15,7 +15,7 @@ const GE = [0, 6, 8, 11]; // madal bass hits (16 steps = 8 beats)
 const TA = [4, 12, 14];
 const GHOST = [2, 7, 10, 15];
 const LAYERS = 5;
-const LAYER_VOL = [1, 0.95, 0.85, 0.7, 0.6];
+const LAYER_VOL = [1, 1, 0.9, 0.75, 0.65];
 
 let C = null;
 let bus = null;
@@ -31,7 +31,7 @@ let fi = 2; // where the flute is on its scale
 let generative = true;
 let stemSrc = [];
 let track = null; // { src, filter, gain }: one finished recording that replaces the generated score
-const TRACK_VOL = 0.85;
+const TRACK_VOL = 1.0;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
 /** A steady tick that is not slowed down when the tab is in the background (a worker; falls back to setInterval). */

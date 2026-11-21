@@ -4,7 +4,7 @@ import { NIGHTS, NIGHT_LEVEL } from '../data/nights.js';
 import { Album } from '../systems/album.js';
 import { completeNight } from '../state.js';
 import { Lighting } from '../systems/Lighting.js';
-import { Flame, FlameCluster } from '../systems/Flame.js';
+import { FlameCluster } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { finish } from '../systems/Motion.js';
 import { text, titleText, hintPill, instructions, tornPaper, go, fadeIn, coverBg, paperGrain, globalKeys, hudButtons, loseScreen, canvasOnly, popText, reviewerControls } from '../ui/ui.js';
@@ -21,7 +21,7 @@ const GRAV = 2400;
 const FALL_MAX = 1500; // falling speed cap
 const V_MAX = 175; // horizontal carry at release, capped so aiming stays fair
 const DROP = 46; // each placed layer rises this far above the one under it (fewer layers now, so each one shows more)
-const NEED = 7; // offerings to place; the 8th swing is the maha-deep
+const NEED = 8; // offerings to place, the last one being the maha-deep
 const LEAN_MAX = 21; // degrees; lean past this and the top layers slide off
 const LEAN_PER_PX = 0.12; // how far off-centre a drop tilts the hill
 const PERFECT = 14; // a drop this close steadies the hill
@@ -325,7 +325,6 @@ export default class Night4 extends Phaser.Scene {
     }).setDepth(645).startFollow(this.flame, 0, -26);
     const glow = this.flameGlow;
     this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
-    this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: this.hillLight, radius: 560, duration: 1600 });
     this.tweens.add({ targets: this, ambient: 0.34, duration: 1800 });
     // parikrama removed
@@ -434,33 +433,6 @@ export default class Night4 extends Phaser.Scene {
     g.lineStyle(3.5, 0xb98a4a, 1).lineBetween(px, py, ax, ay);
     g.fillStyle(0x3a2a18, 1).fillCircle(ax, ay, 7);
     g.fillStyle(0xd9b266, 1).fillCircle(ax, ay, 4);
-  }
-
-  updateKeeper(time) {
-    const k = this.keeper;
-    const b = Math.sin(time * 0.002) * 0.008;
-    k.setScale(this.keeperScale * (1 - b), this.keeperScale * (1 + b));
-    this.kFlame.setPosition(k.x + (0.47 - 0.5) * k.displayWidth, k.y - k.displayHeight * (1 - 0.405));
-    this.kFlame.update(time);
-  }
-
-  cheer() {
-    this.tweens.add({ targets: this.keeper, y: this.keeper.y - 22, duration: 150, yoyo: true, ease: 'Quad.easeOut' });
-  }
-
-  flinch() {
-    this.tweens.add({ targets: this.keeper, angle: { from: -6, to: 0 }, duration: 420, ease: 'Elastic.easeOut' });
-  }
-
-  /** After the crowning, the family walks past the hill with lamps (parikrama). Placeholder figures: the Keeper picture, tinted and small. */
-  parikrama() {
-    for (let i = 0; i < 5; i++) {
-      const spr = this.add.image(0, 0, 'keeper').setOrigin(0.5, 1).setTint(i % 2 ? 0x2a2f55 : 0x3a2f48).setDepth(560).setAlpha(0);
-      const fl = new Flame(this, 0, 0, { size: 22, depth: 561 });
-      const light = this.light.add({ x: 0, y: 0, radius: 120, flicker: 0.06 });
-      this.walkers.push({ spr, fl, light, u: -i * 0.2 });
-      this.tweens.add({ targets: spr, alpha: 1, duration: 700 });
-    }
   }
 
   updateWalkers(dt) {
