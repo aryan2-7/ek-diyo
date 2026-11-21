@@ -67,7 +67,7 @@ export default class Night4 extends Phaser.Scene {
     this.item = null; // the swinging / falling sprite
     this.swap = null; // { key, w, h }
     this.ph = 0;
-    this.ambient = 0.52;
+    this.ambient = 0.22; // festival courtyard: a soft evening tint, not a black night
     this.streak = 0;
     this.walkers = [];
   }
@@ -326,7 +326,7 @@ export default class Night4 extends Phaser.Scene {
     const glow = this.flameGlow;
     this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: this.hillLight, radius: 560, duration: 1600 });
-    this.tweens.add({ targets: this, ambient: 0.34, duration: 1800 });
+    this.tweens.add({ targets: this, ambient: 0.16, duration: 1800 });
     // parikrama removed
     this.time.delayedCall(2600, () => Album.capture(this, 4));
     this.petals.explode(60, CX, BASE_Y - 280);

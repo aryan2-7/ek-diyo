@@ -1,8 +1,9 @@
 # Design notes
 
 **Idea:** one diya, five days. Tihar honours the creatures and people who guard life. The diya gains
-one wick each night (1 on Night 1, 5 on Night 5) and its light is the only way to see: every night
-is drawn as a dark overlay with soft holes of light (`systems/Lighting.js`).
+one wick each night (1 on Night 1, 5 on Night 5) and the music grows with it. Every night has a soft
+night overlay with holes of light punched by each lamp (`systems/Lighting.js`); most nights keep it
+light so the paper art reads clearly, and only Bhai Tika (Night 5) is deliberately gloomy.
 
 **Look:** paper-cut illustration, flat shapes, torn edges, a faint paper grain over everything.
 Palette: marigold `#F2A33A`, vermilion `#C8432B`, indigo `#1D2540`, turmeric `#E8C44B`,

@@ -29,3 +29,6 @@ export const FONT_TITLE = '"Yatra One", "Kalam", serif';
 export const FONT_HAND = 'Kalam, "Segoe Print", cursive';
 
 export const TOTAL_NIGHTS = 5;
+
+// Project page, linked from the end screen.
+export const REPO_URL = 'https://github.com/aryan2-7/ek-diyo';

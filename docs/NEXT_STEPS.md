@@ -12,7 +12,7 @@ Where a feature needs a new asset, the game already has a placeholder so nothing
    Also: the Day 5 story card still says "a tika of seven colours" while the game's tika now has six (as in your reference). Change the card text in `src/data/nights.js` if you want them to agree.
 4. **Remove dead files:** `git rm public/assets/dog_gait_*.webp public/assets/dog_gal_*.webp` (16 images, 0.7 MB, never loaded).
 5. **Deploy and look at the link preview.** On Vercel `og:image` is automatic. Elsewhere build with `VITE_SITE_URL=https://your-site`. Paste the link into WhatsApp/Discord to check `public/og.jpg`.
-6. **Listen to the music** (`docs/audio-preview.wav` or play the game). It was tuned by numbers (levels, spectrum), not by ear. If a layer is too loud, change `LAYER_VOL` in `src/systems/music.js`.
+6. **Listen to the music** (`public/audio/looper_tihar.ogg`, or just play the game). Check the loop point and the volume across the five wicks (`TRACK_VOL` / `cutoff` in `src/systems/music.js`). The built-in synthesized score is only the fallback; if you switch to it, its layers are tuned with `LAYER_VOL`. See `docs/AUDIO.md`.
 
 ## 2. Assets to generate (each has a placeholder in code today)
 
@@ -22,7 +22,7 @@ Where a feature needs a new asset, the game already has a placeholder so nothing
 | **Worn garland** on the brother in Night 5 | the flat garland picture placed on his shoulders (`taskDone` in `Night5.js`) | A garland drawn as a "U" around a neck, transparent middle, id `keeper_mala`; swap the key in `taskDone` |
 | **Golden footprint** in Night 3 | drawn in code (`makeFootprint` in `Night3.js`) | A golden lotus footprint, id `footprint` (add it to `assets.js`): `makeFootprint` skips drawing when the texture exists |
 | Keeper walking frames, crow eating pose, Yama step-in pose, card illustrations | squash-and-hop, tilt, slide, reused sprites | see `docs/ANIMATION_PROMPTS.md` and `docs/TODO.md` |
-| Real music and effects | the generated score and effects | `docs/AUDIO.md` |
+| Replacement music or real effects | the shipped `looper_tihar.ogg` track and synthesized effects | `docs/AUDIO.md` |
 
 ## 3. Not built
 

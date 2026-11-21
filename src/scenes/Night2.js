@@ -63,7 +63,7 @@ export default class Night2 extends Phaser.Scene {
     this.gallop = 0;
     this.dogRot = RUN_TILT;
     this.landUntil = 0;
-    this.ambBase = 0.12; // clearly visible, only a slight night tint; the diya lights the dog's patch of street
+    this.ambBase = 0.08; // clearly visible, only a slight night tint; the diya lights the dog's patch of street
     this.t = 0;
   }
 
@@ -159,7 +159,7 @@ export default class Night2 extends Phaser.Scene {
           this.time.delayedCall(9000, () => this.tweens.add({ targets: this.hint, alpha: 0, duration: 600 }));
         },
       });
-      this.tweens.addCounter({ from: 0.12, to: 0.22, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
+      this.tweens.addCounter({ from: 0.08, to: 0.16, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
     });
   }
 
@@ -576,7 +576,7 @@ export default class Night2 extends Phaser.Scene {
     sit.setScale(0);
     this.tweens.add({ targets: sit, scale: target, duration: 700, ease: 'Back.easeOut' });
     this.petals.explode(40, DOG_X + 20, GROUND - 160);
-    this.tweens.addCounter({ from: this.ambBase, to: 0.3, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
+    this.tweens.addCounter({ from: this.ambBase, to: 0.2, duration: 1800, onUpdate: (t) => (this.ambBase = t.getValue()) });
     const t = titleText(this, W / 2, 250, 'The gate is safe.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900, delay: 500 });
     this.time.delayedCall(4200, () => {

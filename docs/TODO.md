@@ -7,7 +7,7 @@ See `docs/NEXT_STEPS.md` for the full list with how-tos and prompts. In short:
 - [ ] Verify the festival facts in `docs/CONTENT_TO_VERIFY.md` (including the two new lines in Nights 3 and 5).
 - [ ] Fill in "Special thanks" in `src/data/credits.js`; check the contest rules about AI-generated art.
 - [ ] Remove the dead dog frames: `git rm public/assets/dog_gait_*.webp public/assets/dog_gal_*.webp`
-- [ ] Optional: real music and sound effects (`docs/AUDIO.md`); the generated score and effects work without them.
+- [ ] Check the shipped music loop (`public/audio/looper_tihar.ogg`); the generated score is the fallback and effects are synthesized (`docs/AUDIO.md`).
 
 **Art that would help (all optional, placeholders work)**
 - [ ] Family / villager figures for the Night 4 procession (currently the Keeper picture, tinted and small).

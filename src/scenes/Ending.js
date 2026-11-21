@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, COLORS, CSS } from '../config.js';
+import { W, H, COLORS, CSS, REPO_URL } from '../config.js';
 import { DiyaRig } from '../systems/Flame.js';
 import { Sfx } from '../systems/sfx.js';
 import { settings } from '../systems/settings.js';
@@ -91,12 +91,13 @@ export default class Ending extends Phaser.Scene {
       return b;
     };
     const btns = [
+      make(236, 'GitHub page', () => window.open(REPO_URL, '_blank', 'noopener,noreferrer')),
       make(300, 'Your five nights', () => this.open('Album')),
       make(364, 'Greeting card', () => openGreeting(this)),
       make(428, 'Play again', () => go(this, 'Title')),
       make(492, 'Credits', () => this.open('Credits')),
     ];
-    focusMenu(this, btns, { start: 2, readyAt: at + 600 });
+    focusMenu(this, btns, { start: 3, readyAt: at + 600 });
   }
 
   open(key) {

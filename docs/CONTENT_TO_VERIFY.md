@@ -11,8 +11,8 @@ each line with someone at home (or a trusted source) before submitting. Wording 
 4. **Day 3, Gai Tihar and Laxmi Puja:** the cow is garlanded and honoured in the morning; in the evening homes are
    cleaned, lit with lamps, and Laxmi is said to visit bright homes.
 5. **Day 4, Govardhan Puja / Mha Puja:** the card says families build an annakut (a hill of cow dung and offerings), crown it with a
-   lamp and walk around it, retelling Krishna lifting Govardhan; that for the Newar community this day is Mha Puja (worship of the self)
-   and Nepal Sambat (the Newari New Year). Check each claim, and that "walking around it in circles" fits how your family does it.
+   lit lamp and walk around it in circles, retelling Krishna lifting Govardhan hill to shelter the village from Indra's storm. Check
+   each claim, and that "walking around it in circles" fits how your family does it.
 6. **Day 5, Bhai Tika:** sisters give brothers a seven-colour tika and pray for long life, with sweets, fruit and a garland;
    the Yamuna and Yama legend (Yama's boon of fearlessness for brothers who receive tika) is retold in one sentence.
 7. **Game liberties** (not tradition): one more wick per night; the dog as a runner; the rooftop plates being "lit" to attract crows.

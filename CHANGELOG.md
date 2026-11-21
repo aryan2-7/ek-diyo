@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 (2026-11-22): brighter nights, clearer gifts, fresher docs
+
+* **Brightness:** the dark overlay was making every level gloomy — Night 1 used to fade all the way to 0.84. The evening tint is now gentle on Nights 1 to 4 (a little dusk on the roof, a softer midnight in the courtyard, a light evening in the annakut yard). Bhai Tika keeps its gloom: Yama's arrival still darkens the room
+* **Night 5:** the dry-fruit plate is noticeably larger and both ritual gifts have a warm halo that grows brighter with them. The garland keeps its original size and placement; only its glow and colours are brighter, and the worn garland and Yama's offering keep a soft glow
+* **Day 4 story card:** the text is now the two paragraphs supplied by the author, and the art is their detailed annakut illustration (cut out to a transparent WebP); the old code-composed hill is kept only as a fallback if the picture fails to load
+* **Ending:** a "GitHub page" button joins Your five nights, Greeting card, Play again and Credits, and works with the keyboard menu. The project URL lives in `src/config.js`
+* **Settings:** "Reduce motion" now shows the same "reload for changes to take effect" note as Full screen and Unlock levels
+* **Keys swapped:** `Esc` pauses a level (and opens Settings outside levels, including after leaving full screen); `P` opens Settings everywhere, including from the pause menu. The title's key hints and the README were updated to match
+* **Reviewer controls:** Auto and Fast now stay on for the rest of the visit instead of resetting to Off on every new night (they still only appear when "Unlock levels and playthrough" is on)
+* **Docs:** README, credits and the guides now describe the actual music (`public/audio/looper_tihar.ogg` loops across all five nights, with the generated score as fallback) and the brighter nights
+
 ## 0.4.0 (2026-11-20): a somewhat shorter game, and finishing touches
 
 **Length (Nights 1 to 3 trimmed; Nights 4 and 5 unchanged)**

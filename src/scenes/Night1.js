@@ -57,7 +57,7 @@ export default class Night1 extends Phaser.Scene {
     Sfx.setLevel(NIGHT_LEVEL[1]);
     coverBg(this, 'bg_n1', 0);
 
-    this.light = new Lighting(this, { depth: 800, ambient: 0.1 });
+    this.light = new Lighting(this, { depth: 800, ambient: 0.06 });
     finish(this);
     paperGrain(this, 0.12);
 
@@ -421,7 +421,8 @@ export default class Night1 extends Phaser.Scene {
     }
 
     const k = Math.min(1, this.t / DURATION);
-    this.light.ambient = this.won ? this.winAmbient : 0.1 + 0.74 * Math.pow(k, 1.25);
+    // dusk deepens a little, but the rooftop stays warm and readable (the old 0.84 ending was too dark)
+    this.light.ambient = this.won ? this.winAmbient : 0.06 + 0.26 * Math.pow(k, 1.25);
     this.light.update(time);
     this.sun.x = this.barX + this.barW * k;
 
@@ -437,9 +438,9 @@ export default class Night1 extends Phaser.Scene {
     this.won = true;
     this.k.enabled = false;
     Sfx.fanfare();
-    const from = 0.1 + 0.74 * Math.pow(Math.min(1, this.t / DURATION), 1.25);
+    const from = 0.06 + 0.26 * Math.pow(Math.min(1, this.t / DURATION), 1.25);
     this.winAmbient = from;
-    this.tweens.addCounter({ from, to: 0.3, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
+    this.tweens.addCounter({ from, to: 0.16, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
     const t = titleText(this, W / 2, 250, 'The crows are fed.', { size: 64, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 236, duration: 900 });
     const left = Math.max(0, Math.round(DURATION - this.t));

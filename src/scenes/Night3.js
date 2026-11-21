@@ -69,7 +69,7 @@ export default class Night3 extends Phaser.Scene {
     Sfx.setLevel(NIGHT_LEVEL[3]);
     coverBg(this, 'bg_n3', 0);
 
-    this.light = new Lighting(this, { depth: 800, ambient: 0.4 });
+    this.light = new Lighting(this, { depth: 800, ambient: 0.18 });
     finish(this);
     paperGrain(this, 0.12);
 
@@ -401,7 +401,8 @@ export default class Night3 extends Phaser.Scene {
     }
 
     const k = Math.min(1, this.t / DURATION);
-    this.light.ambient = this.won ? this.winAmbient : 0.4 + 0.36 * k;
+    // night falls as midnight nears, but the courtyard stays bright enough to read (was 0.4 + 0.36)
+    this.light.ambient = this.won ? this.winAmbient : 0.18 + 0.18 * k;
     this.light.update(time);
     this.moon.x = this.barX + this.barW * k;
     this.sparkIcons.forEach((d, i) => d.setAlpha(i < this.sparks ? 1 : 0.2));
@@ -414,8 +415,8 @@ export default class Night3 extends Phaser.Scene {
     this.won = true;
     this.k.enabled = false;
     Sfx.fanfare();
-    this.winAmbient = 0.4 + 0.36;
-    this.tweens.addCounter({ from: this.winAmbient, to: 0.44, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
+    this.winAmbient = 0.36;
+    this.tweens.addCounter({ from: this.winAmbient, to: 0.22, duration: 1800, onUpdate: (tw) => (this.winAmbient = tw.getValue()) });
     this.lamps.forEach((l) => (l.oil = Math.max(l.oil, 0.6)));
     const t = titleText(this, W / 2, 230, 'Laxmi walks the lit lanes.', { size: 58, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, y: 216, duration: 900 });

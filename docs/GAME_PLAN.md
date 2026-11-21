@@ -35,7 +35,7 @@ You carry one diya through the five days of Tihar. Each night is a 1.5–2 minut
 1. One image generator for the whole game. Mixing tools breaks the style.
 2. Fresh chat per night (or per ~8 images). Paste the STYLE block first, attach an existing game sprite (e.g. `keeper`, `thali_grain`) as a style reference.
 3. New art for this version: generate the **two must-have Night 4 pieces first** (`dung_pat`, `bowl_rice`), matching the look of the existing `thali_grain` / `dry_fruit_plate` plates.
-4. Backgrounds are generated **bright and flat**; the game darkens them and lights reveal them. No night lighting, no vignettes.
+4. Backgrounds are generated **bright and flat**; the game lays a soft night tint over them and lights punch holes in it. Most levels stay bright, with only Bhai Tika deliberately gloomy. No night lighting, no vignettes.
 5. Sprites go on **solid #FF00FF magenta** — this repo's pipeline (`tools/process_assets.py`, `npm run assets`) keys the magenta out, trims, feathers the edge and saves `public/assets/<id>.webp`. Drop raw files in `art-source/nightN/` and add one line to the MANIFEST.
 6. **Do not generate animation frames unless listed in section 6.** The code bobs, squashes, flips, sways and flickers every sprite.
 7. Name every file exactly as its ID below (lower snake_case).

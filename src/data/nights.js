@@ -81,7 +81,8 @@ export const NIGHTS = {
       art: 'card_hill',
       title: 'Govardhan Puja: the Hill of Food',
       body:
-        'On the fourth day families build a small hill of cow dung and offerings, the annakut or mountain of food, and crown it with a lit lamp, walking around it in circles. It retells the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.',
+        'On the fourth day families build a small hill of cow dung and offerings, the annakut or mountain of food, and crown it with a lit lamp.\n\n' +
+        'Walking around it in circles, they retell the story of Krishna lifting Govardhan hill to shelter the village from Indra\'s storm.',
       fact: 'Festival fact · Day 4 · Govardhan Puja',
     },
     next: 'Night5',

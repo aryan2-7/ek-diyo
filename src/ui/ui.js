@@ -395,25 +395,27 @@ export function toggleFullscreen(scene) {
   }, 400);
 }
 
-/** Wire up the M (mute), F (fullscreen) and Esc (settings) keys in any scene. */
+/** Wire up the M (mute), F (fullscreen), P (settings) and Esc keys in any scene. Esc pauses a level; elsewhere it opens Settings. */
 export function globalKeys(scene) {
   scene.input.keyboard.on('keydown-M', () => Sfx.toggleMute());
   scene.input.keyboard.on('keydown-F', () => toggleFullscreen(scene));
+  scene.input.keyboard.on('keydown-P', () => openSettings(scene));
   let escPending = false;
+  const escAction = () => (scene._escPauses ? openPause(scene) : openSettings(scene));
   scene.input.keyboard.on('keydown-ESC', () => {
     escPending = true;
     setTimeout(() => (escPending = false), 600);
     if (scene.scale.isFullscreen) {
       scene.scale.stopFullscreen();
     } else {
-      openSettings(scene);
+      escAction();
     }
   });
-  // when Esc exits fullscreen, follow up by opening settings
+  // when Esc exits fullscreen, follow up with the same action (pause in a level, settings elsewhere)
   const onFsChange = () => {
     if (!scene.scale.isFullscreen && escPending) {
       escPending = false;
-      setTimeout(() => openSettings(scene), 150);
+      setTimeout(escAction, 150);
     }
   };
   scene.scale.on(Phaser.Scale.Events.LEAVE_FULLSCREEN, onFsChange);
@@ -427,7 +429,7 @@ export const canvasOnly = (fn) => (p, over) => {
 
 /**
  * Small icons so touch players can mute and pause (and, on the title, open settings or go fullscreen).
- * They grow on small screens. pause: true also wires Esc / P to the pause menu. Clean-up is automatic.
+ * They grow on small screens. pause: true makes Esc open the pause menu (P opens Settings from globalKeys). Clean-up is automatic.
  */
 export function hudButtons(scene, { pause = false, settings: withSettings = false, fullscreen = false, x = W / 2 - 34, y = 44 } = {}) {
   const s = uiScale(scene);
@@ -484,12 +486,12 @@ export function hudButtons(scene, { pause = false, settings: withSettings = fals
   });
 
   if (pause) {
+    scene._escPauses = true; // Esc = pause while playing; P = settings (see globalKeys)
     make(x + step, (icon) => {
       icon.fillStyle(COLORS.indigo, 1);
       icon.fillRoundedRect(-9, -11, 6, 22, 2);
       icon.fillRoundedRect(3, -11, 6, 22, 2);
     }, () => openPause(scene));
-    scene.input.keyboard.on('keydown-P', () => openPause(scene));
     // The nights are timed (dusk, oil, Yama's clock): when the window or tab loses focus, pause instead of running on without the player.
     const awayPause = () => {
       if (scene.over || scene.phase === 'done' || scene.phase === 'lost') return; // already won or lost
@@ -530,11 +532,15 @@ export function openPause(scene) {
   scene.scene.launch('Pause', { from: scene.scene.key });
 }
 
+// Reviewer toggles stay on for the rest of the visit, so a setting made on Night 1 still applies on Night 5.
+let reviewerAuto = false;
+let reviewerFast = false;
+
 /** Auto-play / fast-play toggles for reviewers. Only appears when "Unlock levels and playthrough" is on. */
 export function reviewerControls(scene) {
   if (!settings.unlockAll) return;
-  scene.autoPlay = false;
-  scene.fastPlay = false;
+  scene.autoPlay = reviewerAuto;
+  scene.fastPlay = reviewerFast;
   if (!scene.setAutoPlay) {
     scene.setAutoPlay = (v) => {
       scene.autoPlay = v;
@@ -559,6 +565,7 @@ export function reviewerControls(scene) {
   scene._autoLabel = autoLabel;
   scene._fastLabel = fastLabel;
   scene.setAutoPlay = (v) => {
+    reviewerAuto = v;
     scene.autoPlay = v;
     if (autoLabel) {
       autoLabel.setText(`Auto: ${v ? 'On' : 'Off'}`);
@@ -566,6 +573,7 @@ export function reviewerControls(scene) {
     }
   };
   scene.setFastPlay = (v) => {
+    reviewerFast = v;
     scene.fastPlay = v;
     const f = v ? 2 : 1;
     scene.time.timeScale = f;
@@ -576,8 +584,8 @@ export function reviewerControls(scene) {
       fastLabel.setColor(v ? CSS.marigold : CSS.indigo);
     }
   };
-  scene.setAutoPlay(false);
-  scene.setFastPlay(false);
+  scene.setAutoPlay(reviewerAuto);
+  scene.setFastPlay(reviewerFast);
 }
 
 /** Freeze this scene and show the settings on top (works from the title and from the pause menu). */

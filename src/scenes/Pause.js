@@ -40,6 +40,10 @@ export default class Pause extends Phaser.Scene {
       this.scene.stop();
       this.scene.resume(this.from);
     };
+    const openSettings = () => {
+      this.scene.pause();
+      this.scene.launch('Settings', { from: 'Pause' });
+    };
     const opts = { w: 320, h: 58, size: 28, depth: 3 };
     const btns = [
       button(this, W / 2, H / 2 - 90, 'Resume', resume, opts),
@@ -47,10 +51,7 @@ export default class Pause extends Phaser.Scene {
         this.scene.stop();
         this.scene.start(this.from);
       }, opts),
-      button(this, W / 2, H / 2 + 62, 'Settings', () => {
-        this.scene.pause();
-        this.scene.launch('Settings', { from: 'Pause' });
-      }, opts),
+      button(this, W / 2, H / 2 + 62, 'Settings', openSettings, opts),
       button(this, W / 2, H / 2 + 138, '', () => {
         Sfx.toggleMute();
         label.setText(Sfx.muted ? 'Sound: off' : 'Sound: on');
@@ -64,8 +65,8 @@ export default class Pause extends Phaser.Scene {
     label.setText(Sfx.muted ? 'Sound: off' : 'Sound: on');
     focusMenu(this, btns, { start: 0 });
 
-    this.input.keyboard.on('keydown-ESC', resume);
-    this.input.keyboard.on('keydown-P', resume);
+    this.input.keyboard.on('keydown-ESC', resume); // Esc toggles the pause menu
+    this.input.keyboard.on('keydown-P', openSettings); // P opens Settings everywhere
     this.input.keyboard.on('keydown-M', () => label.setText(Sfx.toggleMute() ? 'Sound: off' : 'Sound: on'));
   }
 }

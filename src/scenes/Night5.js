@@ -17,6 +17,8 @@ const TASK_BONUS = 14; // seconds Yama is pushed back each time a ritual task is
 const STEP = 620; // ms between the colours Yamuna points to
 const TAP_RADIUS = 70; // px; piles are ~77 px apart, so a fingertip rarely misses
 const INPUT_DELAY = 380; // ms after the last colour flashes before you can start tapping (the flash itself lasts ~500)
+const GARLAND_W = 140; // its original size was right; only its glow was boosted
+const FRUIT_W = 215; // the dry fruits are the ones that were hard to spot, so they stay larger
 // ---------------------------------------------------------------------------
 
 // the seven powders on the thali, as fractions of the thali picture
@@ -114,9 +116,9 @@ export default class Night5 extends Phaser.Scene {
     // the ritual: a garland for the brother, dry fruits for Yama (placeholders until finished art exists)
     this.makeMala();
     this.garland = this.add.image(0, 0, 'mala_u').setOrigin(0.5, 0).setDepth(330).setAlpha(0);
-    this.garland.setScale(140 / this.garland.width);
+    this.garland.setScale(GARLAND_W / this.garland.width);
     this.plate = this.add.image(0, 0, 'dry_fruit_plate').setDepth(330).setAlpha(0);
-    this.plate.setScale(150 / this.plate.width);
+    this.plate.setScale(FRUIT_W / this.plate.width);
     // Yama's shadow creeps across the floor toward the thali as the danger grows
     this.yShadow = this.add.image(1100, 712, 'light').setTint(0x000000).setOrigin(1, 0.5).setDepth(150).setAlpha(0.16);
 
@@ -320,15 +322,23 @@ export default class Night5 extends Phaser.Scene {
     this.taskKind = kind;
     const item = kind === 'garland' ? this.garland : this.plate;
     const home = kind === 'garland' ? { x: YAMUNA.x - 100, y: 470 } : { x: YAMUNA.x - 70, y: 524 };
+    const fullScale = kind === 'garland' ? GARLAND_W / item.width : FRUIT_W / item.width;
     item.setPosition(home.x, home.y).setAlpha(0);
     item._home = home;
-    this.tweens.add({ targets: item, alpha: 1, duration: 500 });
+    if (kind === 'fruit') {
+      // the fruit plate grows into the room; the garland keeps its original size
+      item.setScale(fullScale * 0.82);
+      this.tweens.add({ targets: item, alpha: 1, scale: fullScale, duration: 650, ease: 'Back.easeOut' });
+    } else {
+      item.setScale(fullScale);
+      this.tweens.add({ targets: item, alpha: 1, duration: 500 });
+    }
     this.setStatus(kind === 'garland' ? 'Drag the garland to your brother (Space)' : 'Offer Yama the dry fruits (drag or Space)');
     const z = this.zone(kind);
-    this.taskRing = this.add.image(z.x, z.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.4).setAlpha(0.4).setDepth(305);
-    this.tweens.add({ targets: this.taskRing, alpha: 0.75, scale: 2.9, yoyo: true, repeat: -1, duration: 700 });
-    this.taskGlow = this.add.image(home.x, home.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffd98a).setScale(2.6).setAlpha(0.8).setDepth(item.depth - 1);
-    this.tweens.add({ targets: this.taskGlow, alpha: 0.45, scale: 2.2, yoyo: true, repeat: -1, duration: 600 });
+    this.taskRing = this.add.image(z.x, z.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setScale(2.8).setAlpha(0.5).setDepth(305);
+    this.tweens.add({ targets: this.taskRing, alpha: 0.85, scale: 3.2, yoyo: true, repeat: -1, duration: 700 });
+    this.taskGlow = this.add.image(home.x, home.y, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffe9b8).setScale(2.5).setAlpha(0.5).setDepth(item.depth - 1);
+    this.tweens.add({ targets: this.taskGlow, alpha: 0.95, scale: 3.5, yoyo: true, repeat: -1, duration: 700, ease: 'Sine.easeInOut' });
     this.bob = this.tweens.add({ targets: item, y: home.y - 8, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.easeInOut' });
     item.setInteractive({ draggable: true, useHandCursor: true });
     this.input.setDraggable(item);
@@ -364,8 +374,10 @@ export default class Night5 extends Phaser.Scene {
     item.disableInteractive();
     if (kind === 'garland') {
       // the garland settles around his shoulders (placeholder: a flat garland; a "worn" overlay would look better)
+      const wearY = KEEPER.y - this.keeper.displayHeight * 0.62 - 40;
       item.setDepth(215);
-      this.tweens.add({ targets: item, x: KEEPER.x, y: KEEPER.y - this.keeper.displayHeight * 0.62 - 40, scale: 140 / item.width, angle: 0, duration: 450, ease: 'Back.easeOut' });
+      this.add.image(KEEPER.x, wearY + 24, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffe0a0).setScale(1.9).setAlpha(0.42).setDepth(214);
+      this.tweens.add({ targets: item, x: KEEPER.x, y: wearY, scale: GARLAND_W / item.width, angle: 0, duration: 450, ease: 'Back.easeOut' });
       this.setStatus('He wears the garland. Now the tika…');
     } else {
       // Yama accepts the dry fruits and forgives one slip
@@ -392,7 +404,7 @@ export default class Night5 extends Phaser.Scene {
     const tex = this.textures.createCanvas('mala_u', w, h);
     const x = tex.getContext();
     const pt = (t) => ({ px: 14 + (w - 28) * t, py: 14 + 72 * Math.sin(Math.PI * t) });
-    x.strokeStyle = '#3a1a28';
+    x.strokeStyle = '#5a2a3a';
     x.lineWidth = 3;
     x.beginPath();
     for (let i = 0; i <= 60; i++) {
@@ -413,10 +425,10 @@ export default class Night5 extends Phaser.Scene {
         flowers.push(p);
       }
     }
-    const cols = [['#b3155f', '#d9307f', '#f06aa8'], ['#a3124f', '#cc2a76', '#ea5c9c']];
+    const cols = [['#c51f6b', '#ea4090', '#ff8fc4'], ['#b81a61', '#dd3687', '#f979b8']];
     flowers.forEach((p, i) => {
       const marigold = i % 7 === 3;
-      const [dark, mid, light] = marigold ? ['#c8622b', '#f2a33a', '#ffd36e'] : cols[i % 2];
+      const [dark, mid, light] = marigold ? ['#d9762f', '#ffb347', '#ffe08a'] : cols[i % 2];
       x.fillStyle = dark;
       x.beginPath();
       x.arc(p.px, p.py, 10.5, 0, Math.PI * 2);
@@ -628,8 +640,10 @@ export default class Night5 extends Phaser.Scene {
     this.yama.setTexture('yama_pleased');
     this.tweens.add({ targets: this.yamaState, a: 1, x: 1110, h: 540, mix: 1, duration: 1200, onUpdate: () => this.applyYama() });
     const plate = this.add.image(YAMUNA.x + 20, 500, 'dry_fruit_plate').setDepth(320).setAlpha(0);
-    plate.setScale(130 / plate.width);
+    plate.setScale(FRUIT_W / plate.width);
     this.tweens.add({ targets: plate, alpha: 1, x: 1010, y: 520, duration: 1400, delay: 600, ease: 'Sine.easeInOut' });
+    const plateGlow = this.add.image(YAMUNA.x + 20, 500, 'glow').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffe9b8).setScale(2.8).setAlpha(0).setDepth(319);
+    this.tweens.add({ targets: plateGlow, alpha: 0.5, x: 1010, y: 520, duration: 1400, delay: 600, ease: 'Sine.easeInOut' });
     this.petals.explode(40, YAMUNA.x, 380);
     const t = titleText(this, W / 2, 190, 'Yama is pleased.', { size: 60, color: CSS.cream, depth: 950 }).setAlpha(0);
     this.tweens.add({ targets: t, alpha: 1, duration: 900, delay: 400 });

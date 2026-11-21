@@ -161,36 +161,81 @@ export default class StoryCard extends Phaser.Scene {
     this.input.keyboard.on('keydown-ENTER', proceed);
   }
 
-  /** The annakut for the Day 4 card: the same offerings you stack in the game, piled up with the maha-deep on top. */
+  /** Fallback only: if the card_hill picture did not load, compose the annakut from the game's offering sprites. */
   makeHill() {
     if (this.textures.exists('card_hill')) return;
     const SQ = { dung_pat: 0.5, thali_grain: 0.85, bowl_rice: 0.82, bowl_curd: 0.82, dry_fruit_plate: 0.85 };
     const CW = 340;
     const CH = 270;
+    const cx = CW / 2;
+    const baseY = CH - 8;
+
     const ops = [];
     let up = 0;
-    const layer = (key, w) => {
+    const layer = (key, w, dx = 0) => {
       const img = this.textures.get(key).getSourceImage();
       const h = img.height * (w / img.width) * (SQ[key] ?? 0.85);
-      ops.push({ img, w, h, up });
+      ops.push({ img, w, h, up, dx });
       up += h * 0.62;
     };
     layer('dung_pat', 300);
     layer('dung_pat', 280);
-    ['thali_grain', 'bowl_rice', 'bowl_curd', 'dry_fruit_plate', 'bowl_rice', 'thali_grain'].forEach((k, i) => layer(k, 220 - i * 22));
+    ['thali_grain', 'bowl_rice', 'bowl_curd', 'dry_fruit_plate', 'bowl_rice', 'thali_grain'].forEach((key, i) => layer(key, 220 - i * 22, i % 2 ? 8 : -8));
     const diya = this.textures.get('diya').getSourceImage();
     const dw = 64;
     const dh = (diya.height * dw) / diya.width;
-    ops.push({ img: diya, w: dw, h: dh, up: up - 6 });
-    const total = up + dh + 40;
-    const k = Math.min(1, (CH - 12) / total);
+    const k = Math.min(1, (CH - 24) / (up + dh + 44));
+
     const tex = this.textures.createCanvas('card_hill', CW, CH);
     const ctx = tex.getContext();
+
+    // a torn-paper mound behind the pile, so it reads as a hill and matches the other cards' single illustration
+    ctx.fillStyle = 'rgba(29,37,64,0.32)';
+    ctx.beginPath();
+    ctx.ellipse(cx, baseY + 1, 132, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const hill = (topY, halfW, color, jag) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(cx, topY);
+      for (let i = 1; i <= 14; i++) {
+        const t = i / 14;
+        ctx.lineTo(cx + halfW * t + (i % 2 ? jag : -jag), topY + (baseY - topY) * t);
+      }
+      ctx.lineTo(cx + halfW, baseY);
+      ctx.lineTo(cx - halfW, baseY);
+      for (let i = 14; i >= 1; i--) {
+        const t = i / 14;
+        ctx.lineTo(cx - halfW * t + (i % 2 ? -jag : jag), topY + (baseY - topY) * t);
+      }
+      ctx.closePath();
+      ctx.fill();
+    };
+    const peak = Math.max(16, baseY - (up + dh - 6) * k - 12);
+    hill(peak + 14, 148, '#8c4a2e', 5);
+    hill(peak + 7, 133, '#e0a03c', 4);
+    hill(peak, 116, '#efe2c4', 3);
+
+    // small lamps dotted on the slope
+    [[-88, 0.7], [88, 0.7], [-62, 0.45], [62, 0.45]].forEach(([dx, t]) => {
+      const x = cx + dx;
+      const y = peak + (baseY - peak) * t;
+      ctx.fillStyle = '#c8622b';
+      ctx.fillRect(x - 7, y - 3, 14, 5);
+      drawFlame(ctx, x, y - 4, 20);
+    });
+
     ctx.save();
-    ctx.translate(CW / 2, CH - 6);
+    ctx.translate(cx, baseY);
     ctx.scale(k, k);
-    ops.forEach((o) => ctx.drawImage(o.img, -o.w / 2, -(o.up + o.h), o.w, o.h));
-    drawFlame(ctx, 0, -(up - 6 + dh) + 10, 40);
+    ops.forEach((o) => ctx.drawImage(o.img, -o.w / 2 + o.dx, -(o.up + o.h), o.w, o.h));
+    // the maha-deep: a flat halo and a bigger flame on the crown
+    const topY = -(up - 6 + dh);
+    ctx.fillStyle = 'rgba(242,163,58,0.35)';
+    ctx.beginPath();
+    ctx.arc(0, topY + 8, 46, 0, Math.PI * 2);
+    ctx.fill();
+    drawFlame(ctx, 0, topY + 10, 50);
     ctx.restore();
     tex.refresh();
   }

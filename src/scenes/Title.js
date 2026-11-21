@@ -115,7 +115,7 @@ export default class Title extends Phaser.Scene {
     g.fillStyle(COLORS.cream, 1).fillRoundedRect(W / 2 - pw / 2, H / 2 - ph / 2, pw, ph, 16);
     g.lineStyle(4, COLORS.indigo, 1).strokeRoundedRect(W / 2 - pw / 2, H / 2 - ph / 2, pw, ph, 16);
     const title = text(this, W / 2, H / 2 - 86, 'How to play', { size: 34, color: CSS.indigo, bold: true, shadow: false, depth: 2002 });
-    const info = text(this, W / 2, H / 2 - 20, 'F: full screen  ·  Esc: settings  ·  M: sound\nP: pause in a level  ·  Enter: begin', { size: 24, color: CSS.soot, shadow: false, depth: 2002, spacing: 6, wrap: 560 });
+    const info = text(this, W / 2, H / 2 - 20, 'F: full screen  ·  P: settings  ·  M: sound\nEsc: pause in a level, settings elsewhere  ·  Enter: begin', { size: 24, color: CSS.soot, shadow: false, depth: 2002, spacing: 6, wrap: 560 });
     const btn = button(this, W / 2, H / 2 + 78, 'Got it', () => done(), { w: 220, h: 56, size: 28, depth: 2002 });
     const done = () => {
       if (!this.gateUp) return;

@@ -1,11 +1,14 @@
 # Ek Diyo: one diya, five days
 
 A paper-cut browser game about **Tihar**, the Nepali festival of lights. You carry one diya
-through the five days of the festival. Every night one more wick joins the flame, one more voice
-joins the music, and the diya's light is the only way to see.
+through the five days of the festival. Every night one more wick joins the flame and the music grows
+with it; the diya's light leads the way. Most nights stay bright and warm — Bhai Tika, with Yama at
+the door, is the gloomy one.
 
 Made for the **KUCC Tihar-Chhath Web UI Contest 2026** (Kathmandu University Computer Club).
 Around seven minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
+
+Source and project page: <https://github.com/aryan2-7/ek-diyo>.
 
 | Night | Festival day | What you do |
 |------:|--------------|-------------|
@@ -23,10 +26,10 @@ Around seven minutes start to finish. Runs in any modern browser, desktop or pho
 | Night 2 (run) | Space / W / Up, or click. Hold for a higher jump | Tap anywhere |
 | Night 4 (annakut stacking) | Click / tap / Space to drop the swinging offering | Tap to drop |
 | Night 5 (ritual) | Drag the garland and the plate (Space does it for you); click a powder or press 1 to 7; swipe down the forehead (or hold Space / the down arrow) | Drag, tap, swipe |
-| Anywhere | `P` pause, `Esc` settings (in full screen the browser keeps Esc: use `P` for pause), `M` sound, `F` full screen. In menus: arrow keys or W / S, Enter | Icons at the top |
+| Anywhere | `Esc` pauses a level; outside a level it opens Settings. `P` opens Settings everywhere. `M` sound, `F` full screen (in full screen the browser keeps Esc to leave it, then the game pauses or opens Settings as above). In menus: arrow keys or W / S, Enter | Icons at the top |
 
 Settings (gear icon on the title, or in the pause menu): music and effects volume, picture quality,
-reduce motion, full screen at start, **Unlock levels and playthrough** (auto-play and fast-play in every level), and **Reset saved progress** (from the title).
+reduce motion, full screen at start, **Unlock levels and playthrough** (auto-play and fast-play buttons in every level — either one stays on from Night 1 to Night 5), and **Reset saved progress** (from the title).
 
 ## Run it
 
@@ -89,7 +92,7 @@ src/
   scenes/
     Preload, BgLoad, Title, StoryCard, Night1 ... Night5, Ending, Pause, Settings, Credits, Album
 public/assets/        game-ready .webp files (generated, committed)
-public/audio/         optional real audio + manifest.json (empty = built-in synthesized sound)
+public/audio/         the looping music track (looper_tihar.ogg) + manifest.json; the built-in score is the fallback
 art-source/           original generated art goes here (not committed, see below)
 tools/                process_assets.py (art), smoke_test.py (headless check), font subsetting
 docs/                 asset manifest, design notes, things to verify, audio guide, next steps
@@ -122,6 +125,6 @@ Each night has a block of constants at the top of its scene file (duration, spee
 
 * Code: MIT (see `LICENSE`). Phaser 3 (MIT), Vite (MIT).
 * Fonts: Yatra One and Kalam, SIL Open Font License, bundled through `@fontsource`.
-* Music and sound: synthesized in the browser (no audio files, no licences to track).
+* Music: `looper_tihar.ogg` (generated for this game), looping through all five nights and swelling as each wick is lit. The five-layer synthesized score in `src/systems/music.js` is the fallback if that file cannot load. Sound effects are synthesized in the browser.
 * Illustrations: generated paper-cut art supplied by the author. Check the contest rules on
   AI-generated art and disclose it if required (the credits screen already says so). The art is not covered by the MIT licence.
