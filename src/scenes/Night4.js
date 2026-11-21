@@ -305,18 +305,26 @@ export default class Night4 extends Phaser.Scene {
     Sfx.fanfare();
     this.say.setText('');
     if (this.hint) this.tweens.add({ targets: this.hint, alpha: 0, duration: 400 });
-    // the maha-deep burns at the crown, on the diya's wick
+    // the maha-deep burns at the crown, on the diya's wick.
+    // The wick's position is stored in the hill container's local space so the flame follows the hill when it leans.
+    const diyaSpr = this.landed.length ? this.landed[this.landed.length - 1].spr : null;
+    const baseX = diyaSpr ? diyaSpr.x : 0;
+    const baseY = diyaSpr ? diyaSpr.y : 0;
+    this.flameLocal = { x: baseX + (0.96 - 0.5) * this.swap.w, y: baseY - (1 - 0.03) * h };
+    const a = Phaser.Math.DegToRad(this.displayLean);
+    const fx = CX + this.flameLocal.x * Math.cos(a) - this.flameLocal.y * Math.sin(a);
+    const fy = BASE_Y + this.flameLocal.x * Math.sin(a) + this.flameLocal.y * Math.cos(a);
     this.flame = new FlameCluster(this, 1, { size: 54, depth: 640 });
-    const flameX = wx + (0.96 - 0.5) * this.swap.w;
-    const flameY = landY - (1 - 0.03) * h;
-    this.flame.setPosition(flameX, flameY);
-    this.hillLight.x = flameX;
-    this.hillLight.y = flameY;
+    this.flame.setPosition(fx, fy);
+    this.hillLight.x = fx;
+    this.hillLight.y = fy;
+    this.flameGlow = this.add.image(fx, fy, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(630).setAlpha(0).setScale(4);
     this.add.particles(0, 0, 'ember', {
       lifespan: { min: 700, max: 1300 }, speedY: { min: -40, max: -90 }, speedX: { min: -20, max: 20 },
       scale: { start: 0.7, end: 0 }, alpha: { start: 0.9, end: 0 }, blendMode: 'ADD', frequency: 130,
     }).setDepth(645).startFollow(this.flame, 0, -26);
-    const glow = this.add.image(flameX, flameY, 'glow').setBlendMode(Phaser.BlendModes.ADD).setDepth(630).setAlpha(0).setScale(4);
+    const glow = this.flameGlow;
+    this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: glow, alpha: 0.5, scale: 6, duration: 1400 });
     this.tweens.add({ targets: this.hillLight, radius: 560, duration: 1600 });
     this.tweens.add({ targets: this, ambient: 0.34, duration: 1800 });
@@ -386,6 +394,19 @@ export default class Night4 extends Phaser.Scene {
     this.displayLean += (this.lean - this.displayLean) * Math.min(1, dt * 6);
     this.drawGauge();
     this.hill.angle = this.displayLean;
+    // keep the maha-deep flame pinned to the (possibly leaning) hill
+    if (this.flame && this.flameLocal) {
+      const a = Phaser.Math.DegToRad(this.displayLean);
+      const fx = CX + this.flameLocal.x * Math.cos(a) - this.flameLocal.y * Math.sin(a);
+      const fy = BASE_Y + this.flameLocal.x * Math.sin(a) + this.flameLocal.y * Math.cos(a);
+      this.flame.setPosition(fx, fy);
+      this.hillLight.x = fx;
+      this.hillLight.y = fy;
+      if (this.flameGlow) {
+        this.flameGlow.x = fx;
+        this.flameGlow.y = fy;
+      }
+    }
 
     this.drawGuide();
     this.drawRope();
