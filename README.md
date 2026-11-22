@@ -2,13 +2,12 @@
 
 A paper-cut browser game about **Tihar**, the Nepali festival of lights. You carry one diya
 through the five days of the festival. Every night one more wick joins the flame and the music grows
-with it; the diya's light leads the way. Most nights stay bright and warm — Bhai Tika, with Yama at
-the door, is the gloomy one.
+with it; the diya's light leads the way.
 
 Made for the **KUCC Tihar-Chhath Web UI Contest 2026** (Kathmandu University Computer Club).
 Around seven minutes start to finish. Runs in any modern browser, desktop or phone (landscape).
 
-Source and project page: <https://github.com/aryan2-7/ek-diyo>.
+Done by Aryan Khatri CE-II/I - B.
 
 | Night | Festival day | What you do |
 |------:|--------------|-------------|
